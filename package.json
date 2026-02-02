@@ -9,15 +9,22 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "framer-motion": "^12.29.3",
+    "fuse.js": "^7.1.0",
+    "highlight.js": "^11.11.1",
+    "lucide-react": "^0.563.0",
+    "nanoid": "^5.1.6",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "sortablejs": "^1.15.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sortablejs": "^1.15.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
