@@ -22,6 +22,7 @@ export function Button({
 
   return (
     <motion.button
+      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       className={`flex items-center gap-2 p-2 rounded-lg border ${variants[variant]} transition-colors duration-200 cursor-pointer`}
       {...props}

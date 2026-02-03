@@ -1,12 +1,35 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { GripVertical, Plus, RefreshCcw, Trash } from "lucide-react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react"
+import {
+  Bell,
+  BellOff,
+  GripVertical,
+  Pencil,
+  Plus,
+  RefreshCcw,
+  Search,
+  Trash,
+} from "lucide-react"
 import { nanoid } from "nanoid"
 import SortableJS from "sortablejs"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
+import Fuse from "fuse.js"
 import { Button } from "../ui/Button"
+import Panel from "./Panel"
+import Modal from "../modals/Modal"
+import { useForm } from "react-hook-form"
+import { useLocalStorageState } from "@/hook/useLocalStorageState"
+import { usePanelAdd } from "@/context/PanelAddContext"
+import { useNotifications, StatusItem } from "@/hook/useNotifications"
 
 enum StatusEnum {
   UP = "up",
@@ -21,76 +44,120 @@ export type StatusType = {
   status: StatusEnum
 }
 
+type StatusFormData = Omit<StatusType, "id" | "status">
+
 const categoryColors: Record<StatusEnum, string> = {
   [StatusEnum.UP]: "bg-green-500",
   [StatusEnum.DOWN]: "bg-red-500",
   [StatusEnum.UNKNOWN]: "bg-gray-500",
 }
 
+function subscribeOnlineStatus(callback: () => void) {
+  window.addEventListener("online", callback)
+  window.addEventListener("offline", callback)
+  return () => {
+    window.removeEventListener("online", callback)
+    window.removeEventListener("offline", callback)
+  }
+}
+
+function getOnlineStatus() {
+  return navigator.onLine
+}
+
+function getServerSnapshot() {
+  return true
+}
+
 export function StatusPanel() {
   const listRef = useRef<HTMLDivElement>(null)
-  const [statuses, setStatuses] = useState<StatusType[]>(() => {
-    const savedStatuses = localStorage.getItem("statuses")
-    return savedStatuses ? JSON.parse(savedStatuses) : []
-  })
-
+  const sortableRef = useRef<SortableJS | null>(null)
+  const statusesRef = useRef<StatusType[]>([])
+  const [statuses, setStatuses] = useLocalStorageState<StatusType[]>(
+    "statuses",
+    [],
+  )
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState<boolean>(false)
+  const { isAdding, openAdd, closeAdd } = usePanelAdd()
+  const addingStatus = isAdding("status")
+  const [searchQuery, setSearchQuery] = useState<string>("")
 
-  const [addingStatus, setAddingStatus] = useState<boolean>(false)
+  const handleStatusUpdateFromSW = useCallback(
+    (updatedStatuses: StatusItem[]) => {
+      setStatuses(updatedStatuses as StatusType[])
+    },
+    [setStatuses],
+  )
 
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine)
+  const {
+    permission,
+    isSupported,
+    isMonitoring,
+    requestPermission,
+    startMonitoring,
+    stopMonitoring,
+    updateStatuses: updateSWStatuses,
+  } = useNotifications(handleStatusUpdateFromSW)
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
+    statusesRef.current = statuses
+  }, [statuses])
 
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-
-    return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
+  useEffect(() => {
+    if (isMonitoring && statuses.length > 0) {
+      updateSWStatuses(statuses)
     }
-  }, [])
+  }, [statuses, isMonitoring, updateSWStatuses])
+
+  const isOnline = useSyncExternalStore(
+    subscribeOnlineStatus,
+    getOnlineStatus,
+    getServerSnapshot,
+  )
+
+  const { register, handleSubmit, reset } = useForm<StatusFormData>()
+
+  const handleSortEnd = useCallback(() => {
+    const items = listRef.current?.querySelectorAll("[data-id]")
+    if (!items) return
+    const newOrder = Array.from(items).map(
+      (item) => item.getAttribute("data-id")!,
+    )
+    setStatuses((prev) => {
+      const statusMap = new Map(prev.map((s) => [s.id, s]))
+      return newOrder.map((id) => statusMap.get(id)!)
+    })
+  }, [setStatuses])
 
   useEffect(() => {
-    if (!listRef.current) return
-
-    const sortable = SortableJS.create(listRef.current, {
-      animation: 150,
-      handle: ".handle",
-      onEnd: () => {
-        const items = listRef.current?.querySelectorAll("[data-id]")
-        if (!items) return
-        const newOrder = Array.from(items).map(
-          (item) => item.getAttribute("data-id")!,
-        )
-        setStatuses((prev) => {
-          const statusMap = new Map(prev.map((s) => [s.id, s]))
-          return newOrder.map((id) => statusMap.get(id)!)
-        })
-      },
-    })
-
-    return () => sortable.destroy()
-  }, [])
+    if (listRef.current && !sortableRef.current) {
+      sortableRef.current = SortableJS.create(listRef.current, {
+        animation: 150,
+        handle: ".handle",
+        onEnd: handleSortEnd,
+      })
+    }
+    return () => {
+      if (sortableRef.current) {
+        sortableRef.current.destroy()
+        sortableRef.current = null
+      }
+    }
+  }, [handleSortEnd])
 
   const handleDelete = (id: string) => {
     setStatuses(statuses.filter((status) => status.id !== id))
   }
 
-  const handleAddStatus = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+  const handleAddStatus = async (data: StatusFormData) => {
+    const { url, name } = data
     const newStatusId = nanoid()
-    const url = formData.get("url") as string
-    const name = formData.get("name") as string
     setStatuses([
       ...statuses,
       { id: newStatusId, url, name, status: StatusEnum.UNKNOWN },
     ])
-    e.currentTarget.reset()
-    setAddingStatus(false)
+    closeAdd()
     const status = await fetch(url)
       .then((res) => (res.ok ? StatusEnum.UP : StatusEnum.DOWN))
       .catch(() => StatusEnum.DOWN)
@@ -101,118 +168,237 @@ export function StatusPanel() {
     )
   }
 
-  useEffect(() => {
-    localStorage.setItem("statuses", JSON.stringify(statuses))
-  }, [statuses])
+  const updateStatuses = useCallback(async () => {
+    const currentStatuses = statusesRef.current
+    if (currentStatuses.length === 0) return
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshing(true)
-      const updateStatuses = async () => {
-        const updatedStatuses = await Promise.all(
-          statuses.map(async (status) => {
-            try {
-              const response = await fetch(status.url)
-              return {
-                ...status,
-                status: response.ok ? StatusEnum.UP : StatusEnum.DOWN,
-              }
-            } catch {
-              return { ...status, status: StatusEnum.DOWN }
-            }
-          }),
-        )
-        setStatuses(updatedStatuses)
-        setRefreshing(false)
+    setRefreshing(true)
+    const updatedStatuses = await Promise.all(
+      currentStatuses.map(async (status) => {
+        try {
+          const response = await fetch(status.url)
+          return {
+            ...status,
+            status: response.ok ? StatusEnum.UP : StatusEnum.DOWN,
+          }
+        } catch {
+          return { ...status, status: StatusEnum.DOWN }
+        }
+      }),
+    )
+    setStatuses(updatedStatuses)
+    setRefreshing(false)
+  }, [setStatuses])
+
+  const toggleNotifications = useCallback(async () => {
+    if (isMonitoring) {
+      stopMonitoring()
+    } else {
+      if (permission !== "granted") {
+        const granted = await requestPermission()
+        if (!granted) {
+          alert(
+            "Notification permission denied. Please enable notifications in your browser settings.",
+          )
+          return
+        }
       }
+      startMonitoring(statuses)
+    }
+  }, [
+    isMonitoring,
+    permission,
+    statuses,
+    requestPermission,
+    startMonitoring,
+    stopMonitoring,
+  ])
 
-      updateStatuses()
-    }, 60000)
+  const handleEditStatus = (data: StatusFormData) => {
+    const { url, name } = data
+    const newStatuses = [...statuses]
+    const index = newStatuses.findIndex((status) => status.id === editingId!)
+    const oldStatus = newStatuses[index]
+    newStatuses[index] = { ...oldStatus, url, name }
+    setStatuses(newStatuses)
+    setEditingId(null)
+    if (oldStatus.url !== url) {
+      fetch(url)
+        .then((res) => (res.ok ? StatusEnum.UP : StatusEnum.DOWN))
+        .catch(() => StatusEnum.DOWN)
+        .then((status) => {
+          setStatuses((prevStatuses) =>
+            prevStatuses.map((statusItem) =>
+              statusItem.id === editingId
+                ? { ...statusItem, status }
+                : statusItem,
+            ),
+          )
+        })
+    }
+  }
 
-    return () => clearInterval(interval)
-  }, [statuses])
+  const filteredStatuses = useMemo(() => {
+    if (searchQuery.trim() === "") return statuses
+    const fuse = new Fuse(statuses, {
+      keys: ["name", "url"],
+      threshold: 0.3,
+    })
+    return fuse.search(searchQuery).map((result) => result.item)
+  }, [statuses, searchQuery])
 
   return (
-    <section className="w-full border-2 rounded-xl border-neutral-200 p-4 min-h-0 flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+    <Panel>
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div
             className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}
           />
           <h2 className="font-bold text-2xl">Status</h2>
-          {refreshing && (
-            <motion.div
-              className="ml-2"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <RefreshCcw size={16} className="text-neutral-500" />
-            </motion.div>
-          )}
+          <motion.button
+            animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
+            onClick={updateStatuses}
+            disabled={refreshing}
+            transition={
+              refreshing
+                ? { duration: 1, repeat: Infinity, ease: "linear" }
+                : { duration: 0.2 }
+            }
+          >
+            <RefreshCcw size={16} className="text-neutral-500" />
+          </motion.button>
         </div>
 
-        <Button onClick={() => setAddingStatus(true)}>
+        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-neutral-300 rounded-lg focus:border-neutral-500 transition-colors mr-auto">
+          <input
+            type="text"
+            placeholder="Search statuses..."
+            className="w-full outline-none bg-transparent"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search size={16} className="text-neutral-400" />
+        </div>
+
+        {isSupported && (
+          <button
+            onClick={toggleNotifications}
+            className={`p-2 rounded-lg border transition-colors ${
+              isMonitoring
+                ? "border-green-500 bg-green-50 text-green-600 hover:bg-green-100"
+                : "border-neutral-300 text-neutral-500 hover:border-neutral-400"
+            }`}
+            title={
+              isMonitoring
+                ? "Background monitoring active - Click to disable"
+                : "Enable background monitoring & notifications"
+            }
+          >
+            {isMonitoring ? <Bell size={20} /> : <BellOff size={20} />}
+          </button>
+        )}
+        <Button
+          onClick={() => {
+            reset({ url: "", name: "" })
+            openAdd("status")
+          }}
+        >
           <Plus size={20} />
-          Add status
         </Button>
       </div>
       <div
-        className="grid grid-cols-2 gap-2 overflow-auto flex-1 min-h-0"
+        className="grid grid-cols-2 gap-2 overflow-auto min-h-0 -mr-3 pr-3"
         ref={listRef}
       >
-        {statuses.length > 0 &&
-          statuses.map((status) => (
-            <div key={status.id} data-id={status.id}>
-              <Link
-                href={status.url}
-                target="_blank"
-                className="relative overflow-hidden flex items-center p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
+        <AnimatePresence>
+          {filteredStatuses.length > 0 ? (
+            filteredStatuses.map((status) => (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0 }}
+                transition={{ duration: 0.2 }}
+                key={status.id}
+                data-id={status.id}
               >
-                <div
-                  className={`absolute w-2 h-full left-0 ${categoryColors[status.status]}`}
-                ></div>
-                <GripVertical
-                  size="20"
-                  className="mx-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
-                />
-                <div className="mr-auto">
-                  <span className="block font-medium">{status.name}</span>
-                  <span className="block text-xs text-neutral-500">
-                    {status.url}
-                  </span>
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleDelete(status.id)
-                  }}
-                  className="p-1 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
+                <Link
+                  href={status.url}
+                  target="_blank"
+                  className="relative overflow-hidden flex items-center p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
                 >
-                  <Trash size={16} />
-                </button>
-              </Link>
-            </div>
-          ))}
-        {statuses.length === 0 && !addingStatus && (
-          <div className="text-neutral-500">No statuses added yet.</div>
-        )}
+                  <div
+                    className={`absolute w-2 h-full left-0 ${categoryColors[status.status]}`}
+                  ></div>
+
+                  <div className="flex gap-2 absolute top-2 right-2">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setEditingId(status.id)
+                        reset({
+                          url: status.url,
+                          name: status.name,
+                        })
+                      }}
+                      className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                    >
+                      <Pencil size={16} />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleDelete(status.id)
+                      }}
+                      className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </div>
+
+                  <GripVertical
+                    size="20"
+                    className="mx-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
+                  />
+                  <div className="mr-auto">
+                    <span className="block font-medium">{status.name}</span>
+                    <span className="block text-xs text-neutral-500">
+                      {status.url}
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+            ))
+          ) : (
+            <div className="text-neutral-500">No statuses added yet.</div>
+          )}
+        </AnimatePresence>
       </div>
-      {addingStatus && (
+      <Modal
+        isOpen={addingStatus || editingId !== null}
+        onClose={() => {
+          closeAdd()
+          setEditingId(null)
+        }}
+      >
+        <h2 className="font-bold text-2xl mb-4">
+          {addingStatus ? "Add Status" : "Edit Status"}
+        </h2>
         <form
-          onSubmit={handleAddStatus}
-          className="flex flex-col gap-2 p-2 rounded-lg border border-neutral-300 mt-4"
+          onSubmit={handleSubmit(
+            addingStatus ? handleAddStatus : handleEditStatus,
+          )}
+          className="flex flex-col gap-2 p-2 w-96"
         >
           <input
-            type="text"
-            name="name"
+            {...register("name")}
             placeholder="Name"
             required
             className="p-2 border border-neutral-300 rounded-lg"
           />
           <input
+            {...register("url")}
             type="url"
-            name="url"
             placeholder="URL"
             required
             className="p-2 border border-neutral-300 rounded-lg"
@@ -220,7 +406,10 @@ export function StatusPanel() {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setAddingStatus(false)}
+              onClick={() => {
+                closeAdd()
+                setEditingId(null)
+              }}
               className="px-4 py-2 rounded-lg border border-neutral-300 hover:border-neutral-500 transition-colors"
             >
               Cancel
@@ -229,11 +418,11 @@ export function StatusPanel() {
               type="submit"
               className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
-              Add
+              {addingStatus ? "Add" : "Save"}
             </button>
           </div>
         </form>
-      )}
-    </section>
+      </Modal>
+    </Panel>
   )
 }

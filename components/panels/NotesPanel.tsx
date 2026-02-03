@@ -1,10 +1,18 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { GripVertical, Plus, Trash, Pencil } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { GripVertical, Pencil, Plus, Search, Trash } from "lucide-react"
 import { nanoid } from "nanoid"
 import SortableJS from "sortablejs"
+import { motion, AnimatePresence } from "framer-motion"
+import Fuse from "fuse.js"
 import { Button } from "../ui/Button"
+import Panel from "./Panel"
+import Modal from "../modals/Modal"
+import { Select } from "../ui/Select"
+import { Controller, useForm } from "react-hook-form"
+import { useLocalStorageState } from "@/hook/useLocalStorageState"
+import { usePanelAdd } from "@/context/PanelAddContext"
 
 export enum NoteCategory {
   WORK = "WORK",
@@ -20,6 +28,8 @@ export type NoteType = {
   content: string
 }
 
+type NoteFormData = Omit<NoteType, "id">
+
 const categoryColors: Record<NoteCategory, string> = {
   [NoteCategory.WORK]: "bg-blue-500",
   [NoteCategory.PERSONAL]: "bg-green-500",
@@ -27,206 +37,202 @@ const categoryColors: Record<NoteCategory, string> = {
   [NoteCategory.OTHER]: "bg-gray-500",
 }
 
+const categoryOptions = Object.values(NoteCategory).map((cat) => ({
+  value: cat,
+  label: cat.charAt(0) + cat.slice(1).toLowerCase(),
+}))
+
 export function NotesPanel() {
   const listRef = useRef<HTMLUListElement>(null)
-  const [notes, setNotes] = useState<NoteType[]>(() => {
-    const savedNotes = localStorage.getItem("notes")
-    return savedNotes ? JSON.parse(savedNotes) : []
-  })
-
-  const [addingNote, setAddingNote] = useState<boolean>(false)
+  const sortableRef = useRef<SortableJS | null>(null)
+  const [notes, setNotes] = useLocalStorageState<NoteType[]>("notes", [])
   const [editingId, setEditingId] = useState<string | null>(null)
+  const { isAdding, openAdd, closeAdd } = usePanelAdd()
+  const addingNote = isAdding("notes")
+  const [searchQuery, setSearchQuery] = useState<string>("")
+
+  const { register, control, handleSubmit, reset } = useForm<NoteFormData>()
+
+  const handleSortEnd = useCallback(
+    (evt: SortableJS.SortableEvent) => {
+      setNotes((prev) => {
+        const newNotes = [...prev]
+        const [movedItem] = newNotes.splice(evt.oldIndex!, 1)
+        newNotes.splice(evt.newIndex!, 0, movedItem)
+        return newNotes
+      })
+    },
+    [setNotes],
+  )
 
   useEffect(() => {
-    if (listRef.current) {
-      const sortable = SortableJS.create(listRef.current, {
+    if (listRef.current && !sortableRef.current) {
+      sortableRef.current = SortableJS.create(listRef.current, {
         animation: 150,
         handle: ".handle",
-        onEnd: (evt) => {
-          setNotes((prevNotes) => {
-            const newNotes = [...prevNotes]
-            const [movedItem] = newNotes.splice(evt.oldIndex!, 1)
-            newNotes.splice(evt.newIndex!, 0, movedItem)
-            return newNotes
-          })
-        },
+        onEnd: handleSortEnd,
       })
-
-      return () => {
-        sortable.destroy()
+    }
+    return () => {
+      if (sortableRef.current) {
+        sortableRef.current.destroy()
+        sortableRef.current = null
       }
     }
-  }, [])
+  }, [handleSortEnd])
 
   const handleDelete = (id: string) => {
     setNotes(notes.filter((note) => note.id !== id))
   }
 
-  const handleAddNote = (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const category = formData.get("category") as NoteCategory
-    const title = formData.get("title") as string
-    const content = formData.get("content") as string
+  const handleAddNote = (data: NoteFormData) => {
+    const { category, title, content } = data
     setNotes([...notes, { id: nanoid(), category, title, content }])
-    e.currentTarget.reset()
-    setAddingNote(false)
+    closeAdd()
   }
 
-  const handleEditNote = (
-    e: React.SubmitEvent<HTMLFormElement>,
-    id: string,
-  ) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const category = formData.get("category") as NoteCategory
-    const title = formData.get("title") as string
-    const content = formData.get("content") as string
+  const handleEditNote = (data: NoteFormData) => {
+    const { category, title, content } = data
     const newNotes = [...notes]
-    const index = newNotes.findIndex((note) => note.id === id)
-    newNotes[index] = { id, category, title, content }
+    const index = newNotes.findIndex((note) => note.id === editingId!)
+    newNotes[index] = { id: editingId!, category, title, content }
     setNotes(newNotes)
     setEditingId(null)
   }
 
-  useEffect(() => {
-    localStorage.setItem("notes", JSON.stringify(notes))
-  }, [notes])
+  const filteredNotes = useMemo(() => {
+    if (searchQuery.trim() === "") return notes
+    const fuse = new Fuse(notes, {
+      keys: ["title", "content", "category"],
+      threshold: 0.3,
+    })
+    return fuse.search(searchQuery).map((result) => result.item)
+  }, [notes, searchQuery])
 
   return (
-    <section className="w-full border-2 rounded-xl border-neutral-200 p-4 min-h-0 flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <h2 className="font-bold text-2xl flex items-center">
-          <GripVertical
-            size="20"
-            className="mr-2 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors inline-block"
-          />
-          Notes
-        </h2>
-        <Button onClick={() => setAddingNote(true)}>
-          <Plus size={20} />
-          Add note
-        </Button>
-      </div>
-      <ul className="space-y-2 overflow-auto flex-1 min-h-0" ref={listRef}>
-        {notes.length > 0 &&
-          notes.map((note) => (
-            <li key={note.id}>
-              {editingId === note.id ? (
-                <form
-                  onSubmit={(e) => handleEditNote(e, note.id)}
-                  className="flex flex-col gap-2 p-2 rounded-lg border border-neutral-300"
-                >
-                  <select
-                    name="category"
-                    required
-                    className="p-2 border border-neutral-300 rounded-lg"
-                    defaultValue={note.category}
-                  >
-                    {Object.values(NoteCategory).map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0) + cat.slice(1).toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    name="title"
-                    placeholder="Title"
-                    required
-                    defaultValue={note.title}
-                    className="p-2 border border-neutral-300 rounded-lg"
-                  />
-                  <textarea
-                    name="content"
-                    placeholder="Content"
-                    required
-                    rows={3}
-                    defaultValue={note.content}
-                    className="p-2 border border-neutral-300 rounded-lg resize-none"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(null)}
-                      className="px-4 py-2 rounded-lg border border-neutral-300 hover:border-neutral-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                    >
-                      Save
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="relative overflow-hidden flex items-start p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors">
-                  <div
-                    className={`absolute w-2 h-full left-0 top-0 ${categoryColors[note.category]}`}
-                  ></div>
-                  <GripVertical
-                    size="20"
-                    className="mx-1 mt-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors flex-shrink-0"
-                  />
-                  <div className="mr-auto min-w-0 flex-1">
-                    <span className="block font-medium">{note.title}</span>
-                    <span className="block text-sm text-neutral-600 whitespace-pre-wrap">
-                      {note.content}
-                    </span>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0 ml-2">
-                    <button
-                      onClick={() => setEditingId(note.id)}
-                      className="p-1 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(note.id)}
-                      className="p-1 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </li>
-          ))}
-        {notes.length === 0 && !addingNote && (
-          <li className="text-neutral-500">No notes added yet.</li>
-        )}
-      </ul>
-      {addingNote && (
-        <form
-          onSubmit={handleAddNote}
-          className="flex flex-col gap-2 p-2 rounded-lg border border-neutral-300 mt-4"
-        >
-          <select
-            name="category"
-            required
-            className="p-2 border border-neutral-300 rounded-lg"
-            defaultValue=""
-          >
-            <option value="" disabled>
-              Select category
-            </option>
-            {Object.values(NoteCategory).map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0) + cat.slice(1).toLowerCase()}
-              </option>
-            ))}
-          </select>
+    <Panel>
+      <div className="flex gap-4 items-center mb-4 flex-shrink-0">
+        <h2 className="font-bold text-2xl flex items-center">Notes</h2>
+
+        <div className="flex w-56 items-center gap-2 mr-auto p-2 text-sm border border-neutral-300 rounded-lg focus:border-neutral-500 transition-colors mr-4">
           <input
             type="text"
-            name="title"
+            placeholder="Search commands..."
+            className="w-full outline-none bg-transparent"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search size={16} className="text-neutral-400" />
+        </div>
+
+        <Button
+          onClick={() => {
+            reset({ category: "" as NoteCategory, title: "", content: "" })
+            openAdd("notes")
+          }}
+        >
+          <Plus size={20} />
+        </Button>
+      </div>
+      <ul
+        className="space-y-2 overflow-auto flex-1 min-h-0 -mr-3 pr-3"
+        ref={listRef}
+      >
+        <AnimatePresence>
+          {filteredNotes.length > 0 ? (
+            filteredNotes.map((note) => (
+              <motion.li
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0 }}
+                transition={{ duration: 0.2 }}
+                key={note.id}
+                className="relative overflow-hidden flex items-start p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
+              >
+                <div
+                  className={`absolute w-2 h-full left-0 top-0 ${categoryColors[note.category]}`}
+                ></div>
+
+                <div className="flex gap-2 absolute top-2 right-2">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setEditingId(note.id)
+                      reset({
+                        category: note.category,
+                        title: note.title,
+                        content: note.content,
+                      })
+                    }}
+                    className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                  >
+                    <Pencil size={16} />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleDelete(note.id)
+                    }}
+                    className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
+
+                <GripVertical
+                  size="20"
+                  className="mx-1 mt-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors flex-shrink-0"
+                />
+                <div className="mr-auto min-w-0 flex-1">
+                  <span className="block font-medium">{note.title}</span>
+                  <span className="block text-sm text-neutral-600 whitespace-pre-wrap">
+                    {note.content}
+                  </span>
+                </div>
+              </motion.li>
+            ))
+          ) : (
+            <li className="text-neutral-500">No notes added yet.</li>
+          )}
+        </AnimatePresence>
+      </ul>
+      <Modal
+        isOpen={addingNote || editingId !== null}
+        onClose={() => {
+          closeAdd()
+          setEditingId(null)
+        }}
+      >
+        <h2 className="font-bold text-2xl mb-4">
+          {addingNote ? "Add Note" : "Edit Note"}
+        </h2>
+        <form
+          onSubmit={handleSubmit(addingNote ? handleAddNote : handleEditNote)}
+          className="flex flex-col gap-2 p-2 w-96"
+        >
+          <Controller
+            name="category"
+            control={control}
+            defaultValue={"" as NoteCategory}
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                searchable
+                clearable
+                onChange={field.onChange}
+                options={categoryOptions}
+              />
+            )}
+          />
+          <input
+            {...register("title")}
             placeholder="Title"
             required
             className="p-2 border border-neutral-300 rounded-lg"
           />
           <textarea
-            name="content"
+            {...register("content")}
             placeholder="Content"
             required
             rows={3}
@@ -235,7 +241,10 @@ export function NotesPanel() {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setAddingNote(false)}
+              onClick={() => {
+                closeAdd()
+                setEditingId(null)
+              }}
               className="px-4 py-2 rounded-lg border border-neutral-300 hover:border-neutral-500 transition-colors"
             >
               Cancel
@@ -244,11 +253,11 @@ export function NotesPanel() {
               type="submit"
               className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
-              Add
+              {addingNote ? "Add" : "Save"}
             </button>
           </div>
         </form>
-      )}
-    </section>
+      </Modal>
+    </Panel>
   )
 }

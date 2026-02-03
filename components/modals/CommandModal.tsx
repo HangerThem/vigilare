@@ -4,10 +4,16 @@ import Modal from "./Modal"
 import Fuse from "fuse.js"
 import { useState, useMemo } from "react"
 
+export interface Command {
+  icon?: React.ReactNode
+  name: string
+  action: () => void
+}
+
 interface CommandModalProps {
   isOpen: boolean
   onClose: () => void
-  commands: { name: string; action: () => void }[]
+  commands: Command[]
 }
 
 export default function CommandModal({
@@ -54,8 +60,9 @@ export default function CommandModal({
             <li
               key={index}
               onClick={() => handleCommandSelect(command)}
-              className="p-2 cursor-pointer hover:bg-gray-200 rounded"
+              className="p-2 flex items-center gap-2 cursor-pointer hover:bg-gray-200 rounded"
             >
+              {command.icon && <span>{command.icon}</span>}
               {command.name}
             </li>
           ))}
