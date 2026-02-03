@@ -14,7 +14,6 @@ import {
   GripVertical,
   Pencil,
   Plus,
-  RefreshCcw,
   Search,
   Trash,
 } from "lucide-react"
@@ -40,7 +39,7 @@ enum StatusEnum {
 export type StatusType = {
   id: string
   url: string
-  name: string
+  title: string
   status: StatusEnum
 }
 
@@ -73,12 +72,10 @@ export function StatusPanel() {
   const listRef = useRef<HTMLDivElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
   const statusesRef = useRef<StatusType[]>([])
-  const [statuses, setStatuses] = useLocalStorageState<StatusType[]>(
-    "statuses",
-    [],
-  )
+  const { value: statuses, setValue: setStatuses } = useLocalStorageState<
+    StatusType[]
+  >("status", [])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState<boolean>(false)
   const { isAdding, openAdd, closeAdd } = usePanelAdd()
   const addingStatus = isAdding("status")
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -91,13 +88,15 @@ export function StatusPanel() {
   )
 
   const {
-    permission,
     isSupported,
     isMonitoring,
-    requestPermission,
+    notificationsEnabled,
+    checkInterval,
+    setCheckInterval,
     startMonitoring,
     stopMonitoring,
-    updateStatuses: updateSWStatuses,
+    enableNotifications,
+    disableNotifications,
   } = useNotifications(handleStatusUpdateFromSW)
 
   useEffect(() => {
@@ -105,10 +104,18 @@ export function StatusPanel() {
   }, [statuses])
 
   useEffect(() => {
-    if (isMonitoring && statuses.length > 0) {
-      updateSWStatuses(statuses)
+    if (statuses.length > 0 && !isMonitoring) {
+      startMonitoring(statuses)
+    } else if (statuses.length === 0 && isMonitoring) {
+      stopMonitoring()
     }
-  }, [statuses, isMonitoring, updateSWStatuses])
+  }, [statuses, isMonitoring, startMonitoring, stopMonitoring])
+
+  useEffect(() => {
+    if (isMonitoring && statuses.length > 0) {
+      startMonitoring(statuses)
+    }
+  }, [statuses]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isOnline = useSyncExternalStore(
     subscribeOnlineStatus,
@@ -151,11 +158,11 @@ export function StatusPanel() {
   }
 
   const handleAddStatus = async (data: StatusFormData) => {
-    const { url, name } = data
+    const { url, title } = data
     const newStatusId = nanoid()
     setStatuses([
       ...statuses,
-      { id: newStatusId, url, name, status: StatusEnum.UNKNOWN },
+      { id: newStatusId, url, title, status: StatusEnum.UNKNOWN },
     ])
     closeAdd()
     const status = await fetch(url)
@@ -168,58 +175,25 @@ export function StatusPanel() {
     )
   }
 
-  const updateStatuses = useCallback(async () => {
-    const currentStatuses = statusesRef.current
-    if (currentStatuses.length === 0) return
-
-    setRefreshing(true)
-    const updatedStatuses = await Promise.all(
-      currentStatuses.map(async (status) => {
-        try {
-          const response = await fetch(status.url)
-          return {
-            ...status,
-            status: response.ok ? StatusEnum.UP : StatusEnum.DOWN,
-          }
-        } catch {
-          return { ...status, status: StatusEnum.DOWN }
-        }
-      }),
-    )
-    setStatuses(updatedStatuses)
-    setRefreshing(false)
-  }, [setStatuses])
-
   const toggleNotifications = useCallback(async () => {
-    if (isMonitoring) {
-      stopMonitoring()
+    if (notificationsEnabled) {
+      disableNotifications()
     } else {
-      if (permission !== "granted") {
-        const granted = await requestPermission()
-        if (!granted) {
-          alert(
-            "Notification permission denied. Please enable notifications in your browser settings.",
-          )
-          return
-        }
+      const enabled = await enableNotifications()
+      if (!enabled) {
+        alert(
+          "Notification permission denied. Please enable notifications in your browser settings.",
+        )
       }
-      startMonitoring(statuses)
     }
-  }, [
-    isMonitoring,
-    permission,
-    statuses,
-    requestPermission,
-    startMonitoring,
-    stopMonitoring,
-  ])
+  }, [notificationsEnabled, enableNotifications, disableNotifications])
 
   const handleEditStatus = (data: StatusFormData) => {
-    const { url, name } = data
+    const { url, title } = data
     const newStatuses = [...statuses]
     const index = newStatuses.findIndex((status) => status.id === editingId!)
     const oldStatus = newStatuses[index]
-    newStatuses[index] = { ...oldStatus, url, name }
+    newStatuses[index] = { ...oldStatus, url, title }
     setStatuses(newStatuses)
     setEditingId(null)
     if (oldStatus.url !== url) {
@@ -255,18 +229,6 @@ export function StatusPanel() {
             className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}
           />
           <h2 className="font-bold text-2xl">Status</h2>
-          <motion.button
-            animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
-            onClick={updateStatuses}
-            disabled={refreshing}
-            transition={
-              refreshing
-                ? { duration: 1, repeat: Infinity, ease: "linear" }
-                : { duration: 0.2 }
-            }
-          >
-            <RefreshCcw size={16} className="text-neutral-500" />
-          </motion.button>
         </div>
 
         <div className="flex w-56 items-center gap-2 p-2 text-sm border border-neutral-300 rounded-lg focus:border-neutral-500 transition-colors mr-auto">
@@ -281,25 +243,44 @@ export function StatusPanel() {
         </div>
 
         {isSupported && (
-          <button
-            onClick={toggleNotifications}
-            className={`p-2 rounded-lg border transition-colors ${
-              isMonitoring
-                ? "border-green-500 bg-green-50 text-green-600 hover:bg-green-100"
-                : "border-neutral-300 text-neutral-500 hover:border-neutral-400"
-            }`}
-            title={
-              isMonitoring
-                ? "Background monitoring active - Click to disable"
-                : "Enable background monitoring & notifications"
-            }
-          >
-            {isMonitoring ? <Bell size={20} /> : <BellOff size={20} />}
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={checkInterval}
+              onChange={(e) => setCheckInterval(Number(e.target.value))}
+              className="p-2 rounded-lg border border-neutral-300 text-sm bg-white hover:border-neutral-400 transition-colors"
+              title="Check interval"
+            >
+              <option value={5000}>5s</option>
+              <option value={10000}>10s</option>
+              <option value={15000}>15s</option>
+              <option value={30000}>30s</option>
+              <option value={60000}>1m</option>
+              <option value={300000}>5m</option>
+            </select>
+            <Button
+              onClick={toggleNotifications}
+              className={
+                notificationsEnabled
+                  ? "border-green-500 bg-green-50 text-green-600 hover:bg-green-100 hover:border-green-600"
+                  : "border-neutral-300 text-neutral-500 hover:border-neutral-400"
+              }
+              title={
+                notificationsEnabled
+                  ? "Notifications enabled - Click to disable"
+                  : "Enable notifications for status changes"
+              }
+            >
+              {notificationsEnabled ? (
+                <Bell size={20} />
+              ) : (
+                <BellOff size={20} />
+              )}
+            </Button>
+          </div>
         )}
         <Button
           onClick={() => {
-            reset({ url: "", name: "" })
+            reset({ url: "", title: "" })
             openAdd("status")
           }}
         >
@@ -307,7 +288,7 @@ export function StatusPanel() {
         </Button>
       </div>
       <div
-        className="grid grid-cols-2 gap-2 overflow-auto min-h-0 -mr-3 pr-3"
+        className="grid grid-cols-1 md:grid-cols-2 gap-2 overflow-auto min-h-0 -mr-3 pr-3"
         ref={listRef}
       >
         <AnimatePresence>
@@ -337,7 +318,7 @@ export function StatusPanel() {
                         setEditingId(status.id)
                         reset({
                           url: status.url,
-                          name: status.name,
+                          title: status.title,
                         })
                       }}
                       className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
@@ -361,7 +342,7 @@ export function StatusPanel() {
                     className="mx-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
                   />
                   <div className="mr-auto">
-                    <span className="block font-medium">{status.name}</span>
+                    <span className="block font-medium">{status.title}</span>
                     <span className="block text-xs text-neutral-500">
                       {status.url}
                     </span>
@@ -391,8 +372,8 @@ export function StatusPanel() {
           className="flex flex-col gap-2 p-2 w-96"
         >
           <input
-            {...register("name")}
-            placeholder="Name"
+            {...register("title")}
+            placeholder="Title"
             required
             className="p-2 border border-neutral-300 rounded-lg"
           />

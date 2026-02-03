@@ -26,7 +26,7 @@ export type LinkType = {
   id: string
   category: LinkCategory
   url: string
-  description: string
+  title: string
 }
 
 type LinkFormData = Omit<LinkType, "id">
@@ -46,7 +46,10 @@ const categoryOptions = Object.values(LinkCategory).map((cat) => ({
 export function LinksPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
-  const [links, setLinks] = useLocalStorageState<LinkType[]>("links", [])
+  const { value: links, setValue: setLinks } = useLocalStorageState<LinkType[]>(
+    "links",
+    [],
+  )
   const [editingId, setEditingId] = useState<string | null>(null)
   const { isAdding, openAdd, closeAdd } = usePanelAdd()
   const addingLink = isAdding("links")
@@ -87,16 +90,16 @@ export function LinksPanel() {
   }
 
   const handleAddLink = (data: LinkFormData) => {
-    const { category, url, description } = data
-    setLinks([...links, { id: nanoid(), category, url, description }])
+    const { category, url, title } = data
+    setLinks([...links, { id: nanoid(), category, url, title }])
     closeAdd()
   }
 
   const handleEditLink = (data: LinkFormData) => {
-    const { category, url, description } = data
+    const { category, url, title } = data
     const newLinks = [...links]
     const index = newLinks.findIndex((link) => link.id === editingId!)
-    newLinks[index] = { id: editingId!, category, url, description }
+    newLinks[index] = { id: editingId!, category, url, title }
     setLinks(newLinks)
     setEditingId(null)
   }
@@ -128,7 +131,7 @@ export function LinksPanel() {
 
         <Button
           onClick={() => {
-            reset({ category: "" as LinkCategory, url: "", description: "" })
+            reset({ category: "" as LinkCategory, url: "", title: "" })
             openAdd("links")
           }}
         >
@@ -166,7 +169,7 @@ export function LinksPanel() {
                         reset({
                           category: link.category,
                           url: link.url,
-                          description: link.description,
+                          title: link.title,
                         })
                       }}
                       className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
@@ -190,9 +193,7 @@ export function LinksPanel() {
                     className="mx-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
                   />
                   <div className="mr-auto">
-                    <span className="block font-medium">
-                      {link.description}
-                    </span>
+                    <span className="block font-medium">{link.title}</span>
                     <span className="block text-xs text-neutral-500">
                       {link.url}
                     </span>
@@ -234,8 +235,8 @@ export function LinksPanel() {
             )}
           />
           <input
-            {...register("description")}
-            placeholder="Description"
+            {...register("title")}
+            placeholder="Title"
             required
             className="p-2 border border-neutral-300 rounded-lg"
           />

@@ -76,7 +76,6 @@ export function Select({
     [options, value],
   )
 
-  // Setup Popper
   useEffect(() => {
     if (isOpen && triggerRef.current && dropdownRef.current) {
       popperRef.current = createPopper(
@@ -173,7 +172,6 @@ export function Select({
     [disabled, isOpen, highlightedIndex, selectableOptions, handleSelect],
   )
 
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node
@@ -192,14 +190,12 @@ export function Select({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Focus search input when dropdown opens
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
       searchInputRef.current.focus()
     }
   }, [isOpen, searchable])
 
-  // Reset highlighted index when search query changes
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setSearchQuery(e.target.value)
@@ -208,7 +204,6 @@ export function Select({
     [],
   )
 
-  // Scroll highlighted option into view
   useEffect(() => {
     if (highlightedIndex >= 0 && listRef.current) {
       const highlightedElement = listRef.current.children[

@@ -45,7 +45,10 @@ const categoryOptions = Object.values(NoteCategory).map((cat) => ({
 export function NotesPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
-  const [notes, setNotes] = useLocalStorageState<NoteType[]>("notes", [])
+  const { value: notes, setValue: setNotes } = useLocalStorageState<NoteType[]>(
+    "notes",
+    [],
+  )
   const [editingId, setEditingId] = useState<string | null>(null)
   const { isAdding, openAdd, closeAdd } = usePanelAdd()
   const addingNote = isAdding("notes")

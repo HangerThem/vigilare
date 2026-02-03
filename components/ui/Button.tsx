@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "@/utils/cn"
 import { motion } from "framer-motion"
 
 interface ButtonProps extends Omit<
@@ -13,6 +14,7 @@ interface ButtonProps extends Omit<
 export function Button({
   children,
   variant = "primary",
+  className,
   ...props
 }: ButtonProps) {
   const variants = {
@@ -24,7 +26,11 @@ export function Button({
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      className={`flex items-center gap-2 p-2 rounded-lg border ${variants[variant]} transition-colors duration-200 cursor-pointer`}
+      className={cn(
+        "flex items-center gap-2 p-2 rounded-lg border transition-colors duration-200 cursor-pointer",
+        variants[variant],
+        className,
+      )}
       {...props}
     >
       {children}

@@ -19,7 +19,7 @@ import { usePanelAdd } from "@/context/PanelAddContext"
 export type CommandType = {
   id: string
   code: string
-  description: string
+  title: string
   language: string
 }
 
@@ -28,10 +28,9 @@ type CommandFormData = Omit<CommandType, "id">
 export function CommandsPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
-  const [commands, setCommands] = useLocalStorageState<CommandType[]>(
-    "commands",
-    [],
-  )
+  const { value: commands, setValue: setCommands } = useLocalStorageState<
+    CommandType[]
+  >("commands", [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [copiedCommandId, setCopiedCommandId] = useState<string | null>(null)
 
@@ -75,16 +74,16 @@ export function CommandsPanel() {
   }
 
   const handleAddCommand = (data: CommandFormData) => {
-    const { language, code, description } = data
-    setCommands([...commands, { id: nanoid(), code, description, language }])
+    const { language, code, title } = data
+    setCommands([...commands, { id: nanoid(), code, title, language }])
     closeAdd()
   }
 
   const handleEditCommand = (data: CommandFormData) => {
-    const { language, code, description } = data
+    const { language, code, title } = data
     const newCommands = [...commands]
     const index = newCommands.findIndex((command) => command.id === editingId!)
-    newCommands[index] = { id: editingId!, code, description, language }
+    newCommands[index] = { id: editingId!, code, title, language }
     setCommands(newCommands)
     setEditingId(null)
   }
@@ -101,7 +100,7 @@ export function CommandsPanel() {
   const filteredCommands = useMemo(() => {
     if (searchQuery.trim() === "") return commands
     const fuse = new Fuse(commands, {
-      keys: ["description", "code", "language"],
+      keys: ["title", "code", "language"],
       threshold: 0.3,
     })
     return fuse.search(searchQuery).map((result) => result.item)
@@ -125,7 +124,7 @@ export function CommandsPanel() {
 
         <Button
           onClick={() => {
-            reset({ language: "", code: "", description: "" })
+            reset({ language: "", code: "", title: "" })
             openAdd("commands")
           }}
         >
@@ -152,7 +151,7 @@ export function CommandsPanel() {
                   className="mr-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
                 />
                 <div className="mr-auto w-full">
-                  <span className="font-medium">{command.description}</span>
+                  <span className="font-medium">{command.title}</span>
 
                   <div className="flex gap-2 absolute top-2 right-2">
                     <button
@@ -161,7 +160,7 @@ export function CommandsPanel() {
                         reset({
                           language: command.language,
                           code: command.code,
-                          description: command.description,
+                          title: command.title,
                         })
                       }}
                       className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
@@ -267,8 +266,8 @@ export function CommandsPanel() {
             className="p-2 border border-neutral-300 rounded-lg"
           />
           <input
-            {...register("description")}
-            placeholder="Description"
+            {...register("title")}
+            placeholder="Title"
             required
             className="p-2 border border-neutral-300 rounded-lg"
           />

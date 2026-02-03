@@ -8,9 +8,19 @@ import { StatusPanel } from "@/components/panels/StatusPanel"
 import { useEffect, useState } from "react"
 import CommandModal, { Command } from "@/components/modals/CommandModal"
 import { usePanelAdd } from "@/context/PanelAddContext"
-import { Link, Network, Notebook, Terminal } from "lucide-react"
+import {
+  Download,
+  Import,
+  Link,
+  Network,
+  Notebook,
+  Terminal,
+} from "lucide-react"
+import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
+import { downloadAppData, importAllAppData } from "@/utils/appData"
 
 export default function Home() {
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const [commandModalOpen, setCommandModalOpen] = useState(false)
   const [commands] = useState<Command[]>([
     {
@@ -41,6 +51,31 @@ export default function Home() {
         openAdd("status")
       },
     },
+    {
+      icon: <Download size={16} />,
+      name: "Export Data",
+      action: () => {
+        downloadAppData()
+      },
+    },
+    {
+      icon: <Import size={16} />,
+      name: "Import Data",
+      action: () => {
+        const fileInput = document.createElement("input")
+        fileInput.type = "file"
+        fileInput.accept = ".json"
+        fileInput.onchange = () => {
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            importAllAppData(e.target?.result as string)
+            window.location.reload()
+          }
+          reader.readAsText(fileInput.files?.[0] as Blob)
+        }
+        fileInput.click()
+      },
+    },
   ])
 
   const { openAdd } = usePanelAdd()
@@ -50,6 +85,9 @@ export default function Home() {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setCommandModalOpen((prev) => !prev)
+      } else if (e.key === "p" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setGlobalSearchOpen((prev) => !prev)
       }
     }
     document.addEventListener("keydown", handleKeyDown)
@@ -60,14 +98,18 @@ export default function Home() {
   }, [commandModalOpen])
 
   return (
-    <div className="gap-2 min-h-screen max-h-screen flex flex-col p-6">
+    <div className="gap-2 min-h-screen md:max-h-screen flex flex-col p-6">
       <CommandModal
         isOpen={commandModalOpen}
         onClose={() => setCommandModalOpen(false)}
         commands={commands}
       />
+      <GlobalSearchModal
+        isOpen={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+      />
       <Header />
-      <main className="grid grid-cols-2 gap-2 flex-1 grid-rows-2 min-h-0">
+      <main className="grid grid-cols-1 lg:grid-cols-2 gap-2 flex-1 grid-rows-2 min-h-0">
         <LinksPanel />
         <NotesPanel />
         <CommandsPanel />
