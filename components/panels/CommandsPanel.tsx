@@ -111,15 +111,15 @@ export function CommandsPanel() {
       <div className="flex items-center gap-4 mb-4 flex-shrink-0">
         <h2 className="font-bold text-2xl flex items-center">Commands</h2>
 
-        <div className="flex w-56 items-center gap-2 mr-auto p-2 text-sm border border-neutral-300 rounded-lg focus:border-neutral-500 transition-colors mr-4">
+        <div className="flex w-56 items-center gap-2 mr-auto p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <input
             type="text"
             placeholder="Search commands..."
-            className="w-full outline-none bg-transparent"
+            className="w-full outline-none bg-transparent text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Search size={16} className="text-neutral-400" />
+          <Search size={16} className="text-[rgb(var(--muted))]" />
         </div>
 
         <Button
@@ -144,11 +144,11 @@ export function CommandsPanel() {
                 exit={{ opacity: 0, scale: 0 }}
                 transition={{ duration: 0.2 }}
                 key={command.id}
-                className="relative overflow-hidden flex items-center p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
+                className="relative overflow-hidden flex items-center p-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors"
               >
                 <GripVertical
                   size="20"
-                  className="mr-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
+                  className="mr-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
                 />
                 <div className="mr-auto w-full">
                   <span className="font-medium">{command.title}</span>
@@ -163,7 +163,7 @@ export function CommandsPanel() {
                           title: command.title,
                         })
                       }}
-                      className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                      className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
                     >
                       <Pencil size={16} />
                     </button>
@@ -173,15 +173,15 @@ export function CommandsPanel() {
                         e.preventDefault()
                         handleDelete(command.id)
                       }}
-                      className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                      className="text-[rgb(var(--muted))] hover:text-red-500 transition-colors cursor-pointer"
                     >
                       <Trash size={16} />
                     </button>
                   </div>
 
-                  <div className="text-sm text-neutral-500 border border-neutral-300 mt-1 p-1 rounded bg-neutral-100 w-full">
+                  <div className="text-sm text-[rgb(var(--muted))] border border-[rgb(var(--border))] mt-1 p-1 rounded bg-[rgb(var(--card-hover))] w-full">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-neutral-400 block">
+                      <span className="text-xs text-[rgb(var(--muted))] block">
                         {command.language}
                       </span>
                       <span className="flex items-center justify-center gap-1">
@@ -192,7 +192,7 @@ export function CommandsPanel() {
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
                               transition={{ duration: 0.1 }}
-                              className="text-xs text-neutral-500"
+                              className="text-xs text-[rgb(var(--muted))]"
                             >
                               Copied!
                             </motion.span>
@@ -203,7 +203,7 @@ export function CommandsPanel() {
                             navigator.clipboard.writeText(command.code)
                             setCopiedCommandId(command.id)
                           }}
-                          className="text-neutral-400 hover:text-neutral-600 transition-colors cursor-pointer"
+                          className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
                         >
                           <Copy size={16} />
                         </button>
@@ -222,7 +222,7 @@ export function CommandsPanel() {
               </motion.li>
             ))
           ) : (
-            <li className="text-neutral-500">No commands added yet.</li>
+            <li className="text-[rgb(var(--muted))]">No commands added yet.</li>
           )}
         </AnimatePresence>
       </ul>
@@ -263,13 +263,13 @@ export function CommandsPanel() {
             {...register("code")}
             placeholder="Command"
             required
-            className="p-2 border border-neutral-300 rounded-lg"
+            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
           />
           <input
             {...register("title")}
             placeholder="Title"
             required
-            className="p-2 border border-neutral-300 rounded-lg"
+            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
           />
           <div className="flex justify-end gap-2">
             <button
@@ -278,13 +278,13 @@ export function CommandsPanel() {
                 closeAdd()
                 setEditingId(null)
               }}
-              className="px-4 py-2 rounded-lg border border-neutral-300 hover:border-neutral-500 transition-colors"
+              className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors"
             >
               {addingCommand ? "Add" : "Save"}
             </button>

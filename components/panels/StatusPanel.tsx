@@ -231,15 +231,15 @@ export function StatusPanel() {
           <h2 className="font-bold text-2xl">Status</h2>
         </div>
 
-        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-neutral-300 rounded-lg focus:border-neutral-500 transition-colors mr-auto">
+        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
           <input
             type="text"
             placeholder="Search statuses..."
-            className="w-full outline-none bg-transparent"
+            className="w-full outline-none bg-transparent text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Search size={16} className="text-neutral-400" />
+          <Search size={16} className="text-[rgb(var(--muted))]" />
         </div>
 
         {isSupported && (
@@ -247,7 +247,7 @@ export function StatusPanel() {
             <select
               value={checkInterval}
               onChange={(e) => setCheckInterval(Number(e.target.value))}
-              className="p-2 rounded-lg border border-neutral-300 text-sm bg-white hover:border-neutral-400 transition-colors"
+              className="p-2 rounded-lg border border-[rgb(var(--border))] text-sm bg-[rgb(var(--card))] hover:border-[rgb(var(--border-hover))] transition-colors"
               title="Check interval"
             >
               <option value={5000}>5s</option>
@@ -261,8 +261,8 @@ export function StatusPanel() {
               onClick={toggleNotifications}
               className={
                 notificationsEnabled
-                  ? "border-green-500 bg-green-50 text-green-600 hover:bg-green-100 hover:border-green-600"
-                  : "border-neutral-300 text-neutral-500 hover:border-neutral-400"
+                  ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
+                  : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
               }
               title={
                 notificationsEnabled
@@ -305,7 +305,7 @@ export function StatusPanel() {
                 <Link
                   href={status.url}
                   target="_blank"
-                  className="relative overflow-hidden flex items-center p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
+                  className="relative overflow-hidden flex items-center p-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors"
                 >
                   <div
                     className={`absolute w-2 h-full left-0 ${categoryColors[status.status]}`}
@@ -321,7 +321,7 @@ export function StatusPanel() {
                           title: status.title,
                         })
                       }}
-                      className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                      className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
                     >
                       <Pencil size={16} />
                     </button>
@@ -331,7 +331,7 @@ export function StatusPanel() {
                         e.preventDefault()
                         handleDelete(status.id)
                       }}
-                      className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                      className="text-[rgb(var(--muted))] hover:text-red-500 transition-colors cursor-pointer"
                     >
                       <Trash size={16} />
                     </button>
@@ -339,11 +339,11 @@ export function StatusPanel() {
 
                   <GripVertical
                     size="20"
-                    className="mx-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors"
+                    className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
                   />
                   <div className="mr-auto">
                     <span className="block font-medium">{status.title}</span>
-                    <span className="block text-xs text-neutral-500">
+                    <span className="block text-xs text-[rgb(var(--muted))]">
                       {status.url}
                     </span>
                   </div>
@@ -351,7 +351,9 @@ export function StatusPanel() {
               </motion.div>
             ))
           ) : (
-            <div className="text-neutral-500">No statuses added yet.</div>
+            <div className="text-[rgb(var(--muted))]">
+              No statuses added yet.
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -375,14 +377,14 @@ export function StatusPanel() {
             {...register("title")}
             placeholder="Title"
             required
-            className="p-2 border border-neutral-300 rounded-lg"
+            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
           />
           <input
             {...register("url")}
             type="url"
             placeholder="URL"
             required
-            className="p-2 border border-neutral-300 rounded-lg"
+            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
           />
           <div className="flex justify-end gap-2">
             <button
@@ -391,13 +393,13 @@ export function StatusPanel() {
                 closeAdd()
                 setEditingId(null)
               }}
-              className="px-4 py-2 rounded-lg border border-neutral-300 hover:border-neutral-500 transition-colors"
+              className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors"
             >
               {addingStatus ? "Add" : "Save"}
             </button>

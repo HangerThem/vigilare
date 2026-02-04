@@ -14,16 +14,20 @@ import {
   Link,
   Network,
   Notebook,
+  PaintRoller,
   Terminal,
 } from "lucide-react"
 import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
 import { downloadAppData, importAllAppData } from "@/utils/appData"
+import { useTheme } from "@/context/ThemeContext"
 
 export default function Home() {
+  const { toggleTheme, getIcon, themeOptions } = useTheme()
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const [commandModalOpen, setCommandModalOpen] = useState(false)
   const [commands] = useState<Command[]>([
     {
+      type: "action",
       icon: <Link size={16} />,
       name: "New Link",
       action: () => {
@@ -31,6 +35,7 @@ export default function Home() {
       },
     },
     {
+      type: "action",
       icon: <Notebook size={16} />,
       name: "New Note",
       action: () => {
@@ -38,6 +43,7 @@ export default function Home() {
       },
     },
     {
+      type: "action",
       icon: <Terminal size={16} />,
       name: "New Command",
       action: () => {
@@ -45,6 +51,7 @@ export default function Home() {
       },
     },
     {
+      type: "action",
       icon: <Network size={16} />,
       name: "New Status",
       action: () => {
@@ -52,6 +59,7 @@ export default function Home() {
       },
     },
     {
+      type: "action",
       icon: <Download size={16} />,
       name: "Export Data",
       action: () => {
@@ -59,6 +67,7 @@ export default function Home() {
       },
     },
     {
+      type: "action",
       icon: <Import size={16} />,
       name: "Import Data",
       action: () => {
@@ -75,6 +84,19 @@ export default function Home() {
         }
         fileInput.click()
       },
+    },
+    {
+      type: "commands",
+      icon: <PaintRoller size={16} />,
+      name: "Change Theme",
+      commands: Array.from(themeOptions).map((themeOption) => ({
+        type: "action",
+        icon: getIcon(themeOption),
+        name: themeOption.charAt(0).toUpperCase() + themeOption.slice(1),
+        action: () => {
+          toggleTheme()
+        },
+      })),
     },
   ])
 
@@ -98,7 +120,7 @@ export default function Home() {
   }, [commandModalOpen])
 
   return (
-    <div className="gap-2 min-h-screen md:max-h-screen flex flex-col p-6">
+    <div className="gap-2 min-h-screen md:max-h-screen flex flex-col p-6 bg-[rgb(var(--background))]">
       <CommandModal
         isOpen={commandModalOpen}
         onClose={() => setCommandModalOpen(false)}

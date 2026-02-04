@@ -216,14 +216,14 @@ export function Select({
   const dropdown = isOpen ? (
     <div
       ref={dropdownRef}
-      className="z-50 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden"
+      className="z-50 bg-[rgb(var(--card))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden"
       style={{ position: "absolute", top: 0, left: 0 }}
     >
       {searchable && (
-        <div className="p-2 border-b border-neutral-100">
+        <div className="p-2 border-b border-[rgb(var(--border))]">
           <div className="relative">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(var(--muted))]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -241,8 +241,9 @@ export function Select({
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-neutral-200 rounded-md 
-                    focus:outline-none focus:border-neutral-400 focus:ring-2 focus:ring-neutral-100"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-[rgb(var(--border))] rounded-md 
+                    bg-[rgb(var(--background))] text-[rgb(var(--foreground))]
+                    focus:outline-none focus:border-[rgb(var(--border-hover))] focus:ring-2 focus:ring-[rgb(var(--border))]"
             />
           </div>
         </div>
@@ -255,7 +256,7 @@ export function Select({
         role="listbox"
       >
         {filteredOptions.length === 0 ? (
-          <div className="py-8 text-center text-neutral-400 text-sm">
+          <div className="py-8 text-center text-[rgb(var(--muted))] text-sm">
             {noOptionsMessage}
           </div>
         ) : (
@@ -270,9 +271,9 @@ export function Select({
                 onMouseEnter={() => setHighlightedIndex(index)}
                 className={`
                       flex items-center justify-between px-3 py-2 cursor-pointer transition-colors
-                      ${isHighlighted ? "bg-neutral-100" : ""}
-                      ${isSelected ? "bg-neutral-50" : ""}
-                      ${option.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-neutral-50"}
+                      ${isHighlighted ? "bg-[rgb(var(--card-hover))]" : ""}
+                      ${isSelected ? "bg-[rgb(var(--card-hover))]" : ""}
+                      ${option.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-[rgb(var(--card-hover))]"}
                     `}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -280,11 +281,11 @@ export function Select({
                     <span className="w-4 h-4 shrink-0">{option.icon}</span>
                   )}
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm text-neutral-700 truncate">
+                    <span className="text-sm text-[rgb(var(--foreground))] truncate">
                       {option.label}
                     </span>
                     {option.description && (
-                      <span className="text-xs text-neutral-400 truncate">
+                      <span className="text-xs text-[rgb(var(--muted))] truncate">
                         {option.description}
                       </span>
                     )}
@@ -292,7 +293,7 @@ export function Select({
                 </div>
                 {isSelected && (
                   <svg
-                    className="w-4 h-4 text-neutral-600 shrink-0 ml-2"
+                    className="w-4 h-4 text-[rgb(var(--foreground))] shrink-0 ml-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -321,10 +322,10 @@ export function Select({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`
           flex items-center justify-between min-h-[42px] px-3 py-2 
-          rounded-lg border border-neutral-300 bg-white
+          rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]
           transition-colors duration-200 cursor-pointer
-          ${isOpen ? "border-neutral-400 ring-2 ring-neutral-100" : ""}
-          ${disabled ? "opacity-50 cursor-not-allowed bg-neutral-50" : "hover:border-neutral-400"}
+          ${isOpen ? "border-[rgb(var(--border-hover))] ring-2 ring-[rgb(var(--border))]" : ""}
+          ${disabled ? "opacity-50 cursor-not-allowed bg-[rgb(var(--card-hover))]" : "hover:border-[rgb(var(--border-hover))]"}
         `}
         tabIndex={disabled ? -1 : 0}
         role="combobox"
@@ -333,14 +334,14 @@ export function Select({
       >
         <div className="flex-1 min-w-0 mr-2">
           {selectedOption ? (
-            <span className="flex items-center gap-2 text-neutral-700">
+            <span className="flex items-center gap-2 text-[rgb(var(--foreground))]">
               {selectedOption.icon && (
                 <span className="w-4 h-4">{selectedOption.icon}</span>
               )}
               {selectedOption.label}
             </span>
           ) : (
-            <span className="text-neutral-400">{placeholder}</span>
+            <span className="text-[rgb(var(--muted))]">{placeholder}</span>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -350,7 +351,7 @@ export function Select({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleClear}
-              className="p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600"
+              className="p-1 rounded hover:bg-[rgb(var(--card-hover))] text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))]"
             >
               <svg
                 className="w-4 h-4"
@@ -370,7 +371,7 @@ export function Select({
           <motion.svg
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.2 }}
-            className="w-4 h-4 text-neutral-400"
+            className="w-4 h-4 text-[rgb(var(--muted))]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

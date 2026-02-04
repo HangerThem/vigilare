@@ -117,15 +117,15 @@ export function NotesPanel() {
       <div className="flex gap-4 items-center mb-4 flex-shrink-0">
         <h2 className="font-bold text-2xl flex items-center">Notes</h2>
 
-        <div className="flex w-56 items-center gap-2 mr-auto p-2 text-sm border border-neutral-300 rounded-lg focus:border-neutral-500 transition-colors mr-4">
+        <div className="flex w-56 items-center gap-2 mr-auto p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <input
             type="text"
-            placeholder="Search commands..."
-            className="w-full outline-none bg-transparent"
+            placeholder="Search notes..."
+            className="w-full outline-none bg-transparent text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Search size={16} className="text-neutral-400" />
+          <Search size={16} className="text-[rgb(var(--muted))]" />
         </div>
 
         <Button
@@ -150,7 +150,7 @@ export function NotesPanel() {
                 exit={{ opacity: 0, scale: 0 }}
                 transition={{ duration: 0.2 }}
                 key={note.id}
-                className="relative overflow-hidden flex items-start p-2 rounded-lg border border-neutral-300 hover:border-neutral-400 transition-colors"
+                className="relative overflow-hidden flex items-start p-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors"
               >
                 <div
                   className={`absolute w-2 h-full left-0 top-0 ${categoryColors[note.category]}`}
@@ -167,7 +167,7 @@ export function NotesPanel() {
                         content: note.content,
                       })
                     }}
-                    className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                    className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
                   >
                     <Pencil size={16} />
                   </button>
@@ -177,7 +177,7 @@ export function NotesPanel() {
                       e.preventDefault()
                       handleDelete(note.id)
                     }}
-                    className="text-neutral-400 hover:text-neutral-500 transition-colors cursor-pointer"
+                    className="text-[rgb(var(--muted))] hover:text-red-500 transition-colors cursor-pointer"
                   >
                     <Trash size={16} />
                   </button>
@@ -185,18 +185,18 @@ export function NotesPanel() {
 
                 <GripVertical
                   size="20"
-                  className="mx-1 mt-1 handle cursor-move text-neutral-400 hover:text-neutral-600 transition-colors flex-shrink-0"
+                  className="mx-1 mt-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors flex-shrink-0"
                 />
                 <div className="mr-auto min-w-0 flex-1">
                   <span className="block font-medium">{note.title}</span>
-                  <span className="block text-sm text-neutral-600 whitespace-pre-wrap">
+                  <span className="block text-sm text-[rgb(var(--muted))] whitespace-pre-wrap">
                     {note.content}
                   </span>
                 </div>
               </motion.li>
             ))
           ) : (
-            <li className="text-neutral-500">No notes added yet.</li>
+            <li className="text-[rgb(var(--muted))]">No notes added yet.</li>
           )}
         </AnimatePresence>
       </ul>
@@ -232,14 +232,14 @@ export function NotesPanel() {
             {...register("title")}
             placeholder="Title"
             required
-            className="p-2 border border-neutral-300 rounded-lg"
+            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
           />
           <textarea
             {...register("content")}
             placeholder="Content"
             required
             rows={3}
-            className="p-2 border border-neutral-300 rounded-lg resize-none"
+            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))] resize-none"
           />
           <div className="flex justify-end gap-2">
             <button
@@ -248,13 +248,13 @@ export function NotesPanel() {
                 closeAdd()
                 setEditingId(null)
               }}
-              className="px-4 py-2 rounded-lg border border-neutral-300 hover:border-neutral-500 transition-colors"
+              className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors"
             >
               {addingNote ? "Add" : "Save"}
             </button>

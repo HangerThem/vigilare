@@ -18,8 +18,10 @@ export function Button({
   ...props
 }: ButtonProps) {
   const variants = {
-    primary: "border-neutral-300 hover:border-neutral-400",
-    secondary: "border-neutral-200 hover:border-neutral-300",
+    primary:
+      "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))]",
+    secondary:
+      "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] opacity-75",
   }
 
   return (

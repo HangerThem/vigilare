@@ -38,7 +38,7 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
           onClick={onClose}
         >
           <motion.div
-            className="bg-white rounded-lg p-6"
+            className="bg-[rgb(var(--card))] text-[rgb(var(--foreground))] rounded-lg p-6 border border-[rgb(var(--border))]"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}

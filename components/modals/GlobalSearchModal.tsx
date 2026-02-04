@@ -88,7 +88,7 @@ export default function GlobalSearchModal({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search links, notes, commands..."
-          className="w-full p-2 mb-4 border border-gray-300 rounded"
+          className="w-full p-2 mb-4 border border-[rgb(var(--border))] rounded bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
           autoFocus
         />
         {results.filter((result) => result.type === ResultType.LINK).length >
@@ -101,12 +101,12 @@ export default function GlobalSearchModal({
                 <div
                   key={index}
                   onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-100"
+                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
                 >
                   <div className="font-medium">
                     {(result.item as LinkType).title}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[rgb(var(--muted))]">
                     {(result.item as LinkType).url}
                   </div>
                 </div>
@@ -123,12 +123,12 @@ export default function GlobalSearchModal({
                 <div
                   key={index}
                   onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-100"
+                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
                 >
                   <div className="font-medium">
                     {(result.item as NoteType).title}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[rgb(var(--muted))]">
                     {(result.item as NoteType).content}
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export default function GlobalSearchModal({
                 <div
                   key={index}
                   onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-100"
+                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
                 >
                   <div className="font-medium">
                     {(result.item as CommandType).code}
@@ -164,12 +164,12 @@ export default function GlobalSearchModal({
                 <div
                   key={index}
                   onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-100"
+                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
                 >
                   <div className="font-medium">
                     {(result.item as StatusType).title}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[rgb(var(--muted))]">
                     {(result.item as StatusType).url}
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function GlobalSearchModal({
           </>
         )}
         {results.length === 0 && (
-          <div className="p-2 text-gray-500">No results found.</div>
+          <div className="p-2 text-[rgb(var(--muted))]">No results found.</div>
         )}
       </div>
     </Modal>
