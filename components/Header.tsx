@@ -10,7 +10,11 @@ export function Header() {
     <header className="w-full">
       <nav className="h-16 border-2 rounded-xl border-[rgb(var(--border))] bg-[rgb(var(--card))] flex items-center justify-between px-4">
         <h1 className="font-bold text-xl">Vigilare</h1>
-        <Button onClick={toggleTheme} title={getTitle(theme)}>
+        <Button
+          onClick={toggleTheme}
+          title={getTitle(theme)}
+          variant="secondary"
+        >
           {getIcon(theme)}
         </Button>
       </nav>

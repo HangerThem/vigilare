@@ -19,9 +19,9 @@ export function Button({
 }: ButtonProps) {
   const variants = {
     primary:
-      "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))]",
+      "text-[rgb(var(--background))] bg-[rgb(var(--primary))] hover:bg-[rgb(var(--primary-hover))]",
     secondary:
-      "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] opacity-75",
+      "text-[rgb(var(--foreground))] border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] hover:bg-[rgb(var(--card-hover))]",
   }
 
   return (

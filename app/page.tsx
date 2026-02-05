@@ -5,131 +5,47 @@ import { Header } from "@/components/Header"
 import { LinksPanel } from "@/components/panels/LinksPanel"
 import { NotesPanel } from "@/components/panels/NotesPanel"
 import { StatusPanel } from "@/components/panels/StatusPanel"
-import { useEffect, useState } from "react"
-import CommandModal, { Command } from "@/components/modals/CommandModal"
-import { usePanelAdd } from "@/context/PanelAddContext"
-import {
-  Download,
-  Import,
-  Link,
-  Network,
-  Notebook,
-  PaintRoller,
-  Terminal,
-} from "lucide-react"
+import { useEffect } from "react"
+import CommandPaletteModal from "@/components/modals/CommandPaletteModal"
+import { useModalOpen } from "@/context/ModalOpenContext"
 import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
-import { downloadAppData, importAllAppData } from "@/utils/appData"
-import { useTheme } from "@/context/ThemeContext"
+import ShortcutsModal, { shortcuts } from "@/components/modals/ShortcutsModal"
 
 export default function Home() {
-  const { setTheme, getIcon, themeOptions } = useTheme()
-  const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
-  const [commandModalOpen, setCommandModalOpen] = useState(false)
-  const [commands] = useState<Command[]>([
-    {
-      type: "action",
-      icon: <Link size={16} />,
-      name: "New Link",
-      action: () => {
-        openAdd("links")
-      },
-    },
-    {
-      type: "action",
-      icon: <Notebook size={16} />,
-      name: "New Note",
-      action: () => {
-        openAdd("notes")
-      },
-    },
-    {
-      type: "action",
-      icon: <Terminal size={16} />,
-      name: "New Command",
-      action: () => {
-        openAdd("commands")
-      },
-    },
-    {
-      type: "action",
-      icon: <Network size={16} />,
-      name: "New Status",
-      action: () => {
-        openAdd("status")
-      },
-    },
-    {
-      type: "action",
-      icon: <Download size={16} />,
-      name: "Export Data",
-      action: () => {
-        downloadAppData()
-      },
-    },
-    {
-      type: "action",
-      icon: <Import size={16} />,
-      name: "Import Data",
-      action: () => {
-        const fileInput = document.createElement("input")
-        fileInput.type = "file"
-        fileInput.accept = ".json"
-        fileInput.onchange = () => {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            importAllAppData(e.target?.result as string)
-            window.location.reload()
-          }
-          reader.readAsText(fileInput.files?.[0] as Blob)
-        }
-        fileInput.click()
-      },
-    },
-    {
-      type: "commands",
-      icon: <PaintRoller size={16} />,
-      name: "Change Theme",
-      commands: Array.from(themeOptions).map((themeOption) => ({
-        type: "action",
-        icon: getIcon(themeOption),
-        name: themeOption.charAt(0).toUpperCase() + themeOption.slice(1),
-        action: () => {
-          setTheme(themeOption)
-        },
-      })),
-    },
-  ])
-
-  const { openAdd } = usePanelAdd()
+  const { openModal, isModalOpen, closeModal } = useModalOpen()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      const shortcut = shortcuts.find(
+        (s) =>
+          s.keys.every(
+            (key) =>
+              e.key.toUpperCase() === key.toUpperCase() ||
+              (key === "Shift" && e.shiftKey) ||
+              (key === "Ctrl" && (e.ctrlKey || e.metaKey)),
+          ) &&
+          s.keys.length ===
+            (e.ctrlKey || e.metaKey ? 1 : 0) + (e.shiftKey ? 1 : 0) + 1,
+      )
+      if (shortcut) {
         e.preventDefault()
-        setCommandModalOpen((prev) => !prev)
-      } else if (e.key === "p" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setGlobalSearchOpen((prev) => !prev)
+        if (isModalOpen(shortcut.modalName)) {
+          closeModal()
+        } else {
+          openModal(shortcut.modalName)
+        }
       }
     }
-    document.addEventListener("keydown", handleKeyDown)
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [commandModalOpen])
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [openModal, closeModal, isModalOpen])
 
   return (
-    <div className="gap-2 min-h-screen md:max-h-screen flex flex-col p-6 bg-[rgb(var(--background))]">
-      <CommandModal
-        isOpen={commandModalOpen}
-        onClose={() => setCommandModalOpen(false)}
-        commands={commands}
-      />
-      <GlobalSearchModal
-        isOpen={globalSearchOpen}
-        onClose={() => setGlobalSearchOpen(false)}
-      />
+    <div className="relative gap-2 min-h-screen md:max-h-screen flex flex-col p-6 bg-[rgb(var(--background))]">
+      <CommandPaletteModal />
+      <GlobalSearchModal />
+      <ShortcutsModal />
       <Header />
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-2 flex-1 grid-rows-2 min-h-0">
         <LinksPanel />

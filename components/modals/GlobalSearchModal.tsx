@@ -3,16 +3,13 @@
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import Modal from "./Modal"
 import Fuse from "fuse.js"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { LinkType } from "../panels/LinksPanel"
 import { NoteType } from "../panels/NotesPanel"
 import { CommandType } from "../panels/CommandsPanel"
 import { StatusType } from "../panels/StatusPanel"
-
-interface GlobalSearchModalProps {
-  isOpen: boolean
-  onClose: () => void
-}
+import { Input } from "../ui/Input"
+import { useModalOpen } from "@/context/ModalOpenContext"
 
 enum ResultType {
   LINK = "link",
@@ -26,10 +23,8 @@ type SearchResult = {
   item: LinkType | NoteType | CommandType | StatusType
 }
 
-export default function GlobalSearchModal({
-  isOpen,
-  onClose,
-}: GlobalSearchModalProps) {
+export default function GlobalSearchModal() {
+  const { isModalOpen } = useModalOpen()
   const [query, setQuery] = useState("")
   const { value: links } = useLocalStorageState<LinkType[]>("links", [])
   const { value: notes } = useLocalStorageState<NoteType[]>("notes", [])
@@ -39,8 +34,15 @@ export default function GlobalSearchModal({
   )
   const { value: statuses } = useLocalStorageState<StatusType[]>("status", [])
 
+  const isOpen = isModalOpen("globalSearch")
+
   const results = useMemo(() => {
-    if (query === "") {
+    if (!isOpen) {
+      return []
+    }
+
+    const effectiveQuery = query.trim()
+    if (effectiveQuery === "") {
       return []
     }
 
@@ -62,8 +64,8 @@ export default function GlobalSearchModal({
       threshold: 0.3,
     })
 
-    return fuse.search(query).map((result) => result.item)
-  }, [query, links, notes, commands, statuses])
+    return fuse.search(effectiveQuery).map((result) => result.item)
+  }, [isOpen, query, links, notes, commands, statuses])
 
   const handleResultSelect = (result: SearchResult) => {
     switch (result.type) {
@@ -80,15 +82,20 @@ export default function GlobalSearchModal({
     }
   }
 
+  const handleClose = useCallback(() => {
+    setQuery("")
+  }, [])
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="w-96">
-        <input
+    <Modal name="globalSearch" onClose={handleClose}>
+      <h1 className="text-2xl font-bold mb-4">Global Search</h1>
+      <div className="w-120">
+        <Input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search links, notes, commands..."
-          className="w-full p-2 mb-4 border border-[rgb(var(--border))] rounded bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
+          className="mb-4"
           autoFocus
         />
         {results.filter((result) => result.type === ResultType.LINK).length >

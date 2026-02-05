@@ -2,15 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useLocalStorageState } from "./useLocalStorageState"
+import { StatusType } from "@/components/panels/StatusPanel"
+import { useOnline } from "./useOnline"
 
 export type NotificationPermission = "default" | "granted" | "denied"
-
-export interface StatusItem {
-  id: string
-  url: string
-  title: string
-  status: "up" | "down" | "unknown"
-}
 
 export interface UseNotificationsReturn {
   permission: NotificationPermission
@@ -20,7 +15,7 @@ export interface UseNotificationsReturn {
   checkInterval: number
   setCheckInterval: (interval: number) => void
   requestPermission: () => Promise<boolean>
-  startMonitoring: (statuses: StatusItem[]) => void
+  startMonitoring: (statuses: StatusType[]) => void
   stopMonitoring: () => void
   enableNotifications: () => Promise<boolean>
   disableNotifications: () => void
@@ -39,7 +34,7 @@ function getInitialPermission(): NotificationPermission {
   return Notification.permission as NotificationPermission
 }
 
-async function checkStatus(status: StatusItem): Promise<"up" | "down"> {
+async function checkStatus(status: StatusType): Promise<"up" | "down"> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
@@ -59,8 +54,9 @@ async function checkStatus(status: StatusItem): Promise<"up" | "down"> {
 }
 
 export function useNotifications(
-  onStatusUpdate?: (statuses: StatusItem[]) => void,
+  onStatusUpdate?: (statuses: StatusType[]) => void,
 ): UseNotificationsReturn {
+  const isOnline = useOnline()
   const [permission, setPermission] =
     useState<NotificationPermission>(getInitialPermission)
   const [isSupported] = useState(getInitialSupport)
@@ -73,7 +69,7 @@ export function useNotifications(
 
   const swRegistration = useRef<ServiceWorkerRegistration | null>(null)
   const onStatusUpdateRef = useRef(onStatusUpdate)
-  const statusesRef = useRef<StatusItem[]>([])
+  const statusesRef = useRef<StatusType[]>([])
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -111,31 +107,31 @@ export function useNotifications(
 
   const showNotification = useCallback(
     async (
-      status: StatusItem,
-      previousStatus: "up" | "down" | "unknown",
-      newStatus: "up" | "down",
+      status: StatusType,
+      previousState: "up" | "down" | "unknown",
+      newState: "up" | "down",
     ) => {
       if (Notification.permission !== "granted") return
       if (!swRegistration.current) return
 
       const title =
-        newStatus === "up"
+        newState === "up"
           ? `✅ ${status.title} is back online!`
           : `🔴 ${status.title} is down!`
 
       const body =
-        newStatus === "up"
+        newState === "up"
           ? `${status.title} has recovered and is now accessible.`
-          : `${status.title} is no longer responding. Previous status: ${previousStatus}`
+          : `${status.title} is no longer responding. Previous status: ${previousState}`
 
       try {
         await swRegistration.current.showNotification(title, {
           body,
-          icon: newStatus === "up" ? "/icon-success.png" : "/icon-error.png",
+          icon: newState === "up" ? "/icon-success.png" : "/icon-error.png",
           badge: "/badge.png",
           tag: `status-${status.id}`,
           data: { url: status.url },
-          requireInteraction: newStatus === "down",
+          requireInteraction: newState === "down",
         })
       } catch (error) {
         console.error("Error showing notification:", error)
@@ -145,38 +141,38 @@ export function useNotifications(
   )
 
   const performCheck = useCallback(async () => {
+    if (!isOnline) {
+      console.log("Offline: Skipping status check")
+      return
+    }
+
     const statuses = statusesRef.current
     if (!statuses || statuses.length === 0) {
       console.log("No statuses to check")
       return
     }
 
-    console.log(`Checking ${statuses.length} statuses...`)
-    const updatedStatuses: StatusItem[] = []
+    const updatedStatuses: StatusType[] = []
 
     for (const status of statuses) {
-      const newStatus = await checkStatus(status)
-      const previousStatus = status.status
+      const newState = await checkStatus(status)
+      const previousState = status.state
 
-      console.log(`${status.title}: ${previousStatus} -> ${newStatus}`)
-
-      if (previousStatus !== "unknown" && previousStatus !== newStatus) {
-        console.log(`Status changed for ${status.title}!`)
+      if (previousState !== "unknown" && previousState !== newState) {
         if (notificationsEnabledRef.current) {
-          console.log(`Sending notification for ${status.title}...`)
-          await showNotification(status, previousStatus, newStatus)
+          await showNotification(status, previousState, newState)
         }
       }
 
       updatedStatuses.push({
         ...status,
-        status: newStatus,
+        state: newState,
       })
     }
 
     statusesRef.current = updatedStatuses
     onStatusUpdateRef.current?.(updatedStatuses)
-  }, [showNotification])
+  }, [showNotification, isOnline])
 
   useEffect(() => {
     if (!isMonitoring) return
@@ -227,7 +223,7 @@ export function useNotifications(
   }, [setNotificationsEnabled])
 
   const startMonitoring = useCallback(
-    (statuses: StatusItem[]) => {
+    (statuses: StatusType[]) => {
       statusesRef.current = statuses
       setIsMonitoring(true)
       localStorage.setItem("statusMonitoring", "true")

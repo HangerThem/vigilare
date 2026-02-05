@@ -1,13 +1,6 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Bell,
   BellOff,
@@ -17,55 +10,34 @@ import {
   Search,
   Trash,
 } from "lucide-react"
-import { nanoid } from "nanoid"
 import SortableJS from "sortablejs"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import Fuse from "fuse.js"
 import { Button } from "../ui/Button"
 import Panel from "./Panel"
-import Modal from "../modals/Modal"
-import { useForm } from "react-hook-form"
+import StatusFormModal from "../modals/StatusFormModal"
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
-import { usePanelAdd } from "@/context/PanelAddContext"
-import { useNotifications, StatusItem } from "@/hook/useNotifications"
+import { useModalOpen } from "@/context/ModalOpenContext"
+import { useNotifications } from "@/hook/useNotifications"
+import { Select } from "../ui/Select"
+import { Input } from "../ui/Input"
+import { useOnline } from "@/hook/useOnline"
 
-enum StatusEnum {
-  UP = "up",
-  DOWN = "down",
-  UNKNOWN = "unknown",
-}
+export type StatusState = "up" | "down" | "unknown"
 
 export type StatusType = {
   id: string
   url: string
   title: string
-  status: StatusEnum
+  option?: string
+  state: StatusState
 }
 
-type StatusFormData = Omit<StatusType, "id" | "status">
-
-const categoryColors: Record<StatusEnum, string> = {
-  [StatusEnum.UP]: "bg-green-500",
-  [StatusEnum.DOWN]: "bg-red-500",
-  [StatusEnum.UNKNOWN]: "bg-gray-500",
-}
-
-function subscribeOnlineStatus(callback: () => void) {
-  window.addEventListener("online", callback)
-  window.addEventListener("offline", callback)
-  return () => {
-    window.removeEventListener("online", callback)
-    window.removeEventListener("offline", callback)
-  }
-}
-
-function getOnlineStatus() {
-  return navigator.onLine
-}
-
-function getServerSnapshot() {
-  return true
+const categoryColors: Record<StatusState, string> = {
+  up: "bg-green-500",
+  down: "bg-red-500",
+  unknown: "bg-gray-500",
 }
 
 export function StatusPanel() {
@@ -76,13 +48,13 @@ export function StatusPanel() {
     StatusType[]
   >("status", [])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const { isAdding, openAdd, closeAdd } = usePanelAdd()
-  const addingStatus = isAdding("status")
+  const { openModal } = useModalOpen()
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const isOnline = useOnline()
 
   const handleStatusUpdateFromSW = useCallback(
-    (updatedStatuses: StatusItem[]) => {
-      setStatuses(updatedStatuses as StatusType[])
+    (updatedStatuses: StatusType[]) => {
+      setStatuses(updatedStatuses)
     },
     [setStatuses],
   )
@@ -117,14 +89,6 @@ export function StatusPanel() {
     }
   }, [statuses]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isOnline = useSyncExternalStore(
-    subscribeOnlineStatus,
-    getOnlineStatus,
-    getServerSnapshot,
-  )
-
-  const { register, handleSubmit, reset } = useForm<StatusFormData>()
-
   const handleSortEnd = useCallback(() => {
     const items = listRef.current?.querySelectorAll("[data-id]")
     if (!items) return
@@ -157,24 +121,6 @@ export function StatusPanel() {
     setStatuses(statuses.filter((status) => status.id !== id))
   }
 
-  const handleAddStatus = async (data: StatusFormData) => {
-    const { url, title } = data
-    const newStatusId = nanoid()
-    setStatuses([
-      ...statuses,
-      { id: newStatusId, url, title, status: StatusEnum.UNKNOWN },
-    ])
-    closeAdd()
-    const status = await fetch(url)
-      .then((res) => (res.ok ? StatusEnum.UP : StatusEnum.DOWN))
-      .catch(() => StatusEnum.DOWN)
-    setStatuses((prevStatuses) =>
-      prevStatuses.map((statusItem) =>
-        statusItem.id === newStatusId ? { ...statusItem, status } : statusItem,
-      ),
-    )
-  }
-
   const toggleNotifications = useCallback(async () => {
     if (notificationsEnabled) {
       disableNotifications()
@@ -188,34 +134,10 @@ export function StatusPanel() {
     }
   }, [notificationsEnabled, enableNotifications, disableNotifications])
 
-  const handleEditStatus = (data: StatusFormData) => {
-    const { url, title } = data
-    const newStatuses = [...statuses]
-    const index = newStatuses.findIndex((status) => status.id === editingId!)
-    const oldStatus = newStatuses[index]
-    newStatuses[index] = { ...oldStatus, url, title }
-    setStatuses(newStatuses)
-    setEditingId(null)
-    if (oldStatus.url !== url) {
-      fetch(url)
-        .then((res) => (res.ok ? StatusEnum.UP : StatusEnum.DOWN))
-        .catch(() => StatusEnum.DOWN)
-        .then((status) => {
-          setStatuses((prevStatuses) =>
-            prevStatuses.map((statusItem) =>
-              statusItem.id === editingId
-                ? { ...statusItem, status }
-                : statusItem,
-            ),
-          )
-        })
-    }
-  }
-
   const filteredStatuses = useMemo(() => {
     if (searchQuery.trim() === "") return statuses
     const fuse = new Fuse(statuses, {
-      keys: ["name", "url"],
+      keys: ["name", "url", "option"],
       threshold: 0.3,
     })
     return fuse.search(searchQuery).map((result) => result.item)
@@ -232,31 +154,30 @@ export function StatusPanel() {
         </div>
 
         <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
-          <input
+          <Input
             type="text"
             placeholder="Search statuses..."
-            className="w-full outline-none bg-transparent text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            variant="ghost"
           />
           <Search size={16} className="text-[rgb(var(--muted))]" />
         </div>
 
         {isSupported && (
           <div className="flex items-center gap-2">
-            <select
+            <Select
+              options={[
+                { value: 5000, label: "5 secs" },
+                { value: 30000, label: "30 secs" },
+                { value: 60000, label: "1 mins" },
+                { value: 900000, label: "15 mins" },
+                { value: 3600000, label: "60 mins" },
+              ]}
               value={checkInterval}
-              onChange={(e) => setCheckInterval(Number(e.target.value))}
-              className="p-2 rounded-lg border border-[rgb(var(--border))] text-sm bg-[rgb(var(--card))] hover:border-[rgb(var(--border-hover))] transition-colors"
-              title="Check interval"
-            >
-              <option value={5000}>5s</option>
-              <option value={10000}>10s</option>
-              <option value={15000}>15s</option>
-              <option value={30000}>30s</option>
-              <option value={60000}>1m</option>
-              <option value={300000}>5m</option>
-            </select>
+              onChange={(value) => setCheckInterval(Number(value))}
+              className="w-32"
+            />
             <Button
               onClick={toggleNotifications}
               className={
@@ -264,6 +185,7 @@ export function StatusPanel() {
                   ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
                   : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
               }
+              variant="secondary"
               title={
                 notificationsEnabled
                   ? "Notifications enabled - Click to disable"
@@ -280,9 +202,10 @@ export function StatusPanel() {
         )}
         <Button
           onClick={() => {
-            reset({ url: "", title: "" })
-            openAdd("status")
+            setEditingId(null)
+            openModal("status")
           }}
+          variant="secondary"
         >
           <Plus size={20} />
         </Button>
@@ -308,7 +231,7 @@ export function StatusPanel() {
                   className="relative overflow-hidden flex items-center p-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors"
                 >
                   <div
-                    className={`absolute w-2 h-full left-0 ${categoryColors[status.status]}`}
+                    className={`absolute w-2 h-full left-0 ${categoryColors[status.state]}`}
                   ></div>
 
                   <div className="flex gap-2 absolute top-2 right-2">
@@ -316,10 +239,7 @@ export function StatusPanel() {
                       onClick={(e) => {
                         e.preventDefault()
                         setEditingId(status.id)
-                        reset({
-                          url: status.url,
-                          title: status.title,
-                        })
+                        openModal("status")
                       }}
                       className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
                     >
@@ -342,7 +262,14 @@ export function StatusPanel() {
                     className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
                   />
                   <div className="mr-auto">
-                    <span className="block font-medium">{status.title}</span>
+                    <span className="block font-medium">
+                      {status.title}
+                      {status.option && (
+                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-[rgb(var(--border))] text-[rgb(var(--muted))]">
+                          {status.option}
+                        </span>
+                      )}
+                    </span>
                     <span className="block text-xs text-[rgb(var(--muted))]">
                       {status.url}
                     </span>
@@ -357,55 +284,12 @@ export function StatusPanel() {
           )}
         </AnimatePresence>
       </div>
-      <Modal
-        isOpen={addingStatus || editingId !== null}
-        onClose={() => {
-          closeAdd()
-          setEditingId(null)
-        }}
-      >
-        <h2 className="font-bold text-2xl mb-4">
-          {addingStatus ? "Add Status" : "Edit Status"}
-        </h2>
-        <form
-          onSubmit={handleSubmit(
-            addingStatus ? handleAddStatus : handleEditStatus,
-          )}
-          className="flex flex-col gap-2 p-2 w-96"
-        >
-          <input
-            {...register("title")}
-            placeholder="Title"
-            required
-            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
-          />
-          <input
-            {...register("url")}
-            type="url"
-            placeholder="URL"
-            required
-            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                closeAdd()
-                setEditingId(null)
-              }}
-              className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors"
-            >
-              {addingStatus ? "Add" : "Save"}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <StatusFormModal
+        statuses={statuses}
+        setStatuses={setStatuses}
+        editingId={editingId}
+        setEditingId={setEditingId}
+      />
     </Panel>
   )
 }

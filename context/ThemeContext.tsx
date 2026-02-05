@@ -36,6 +36,17 @@ function getInitialTheme(): Theme {
   return (localStorage.getItem("theme") as Theme) || "system"
 }
 
+function disableTransitionsTemporarily() {
+  const root = document.documentElement
+  root.classList.add("disable-transitions")
+
+  void root.offsetHeight
+
+  setTimeout(() => {
+    root.classList.remove("disable-transitions")
+  }, 50)
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme)
   const [themeOptions] = useState<Theme[]>(["light", "dark", "system"])
@@ -44,6 +55,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement
+
+    disableTransitionsTemporarily()
+
     root.classList.remove("light", "dark")
     root.classList.add(resolvedTheme)
 
@@ -55,6 +69,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
     const handler = () => {
+      disableTransitionsTemporarily()
+
       const resolved = getSystemTheme()
       document.documentElement.classList.remove("light", "dark")
       document.documentElement.classList.add(resolved)

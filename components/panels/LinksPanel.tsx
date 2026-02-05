@@ -2,18 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { GripVertical, Pencil, Plus, Search, Trash } from "lucide-react"
-import { nanoid } from "nanoid"
 import SortableJS from "sortablejs"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import Fuse from "fuse.js"
 import { Button } from "../ui/Button"
 import Panel from "./Panel"
-import Modal from "../modals/Modal"
-import { Select } from "../ui/Select"
-import { Controller, useForm } from "react-hook-form"
+import LinkFormModal from "../modals/LinkFormModal"
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
-import { usePanelAdd } from "@/context/PanelAddContext"
+import { useModalOpen } from "@/context/ModalOpenContext"
+import { Input } from "../ui/Input"
 
 export enum LinkCategory {
   WORK = "WORK",
@@ -29,19 +27,12 @@ export type LinkType = {
   title: string
 }
 
-type LinkFormData = Omit<LinkType, "id">
-
 const categoryColors: Record<LinkCategory, string> = {
   [LinkCategory.WORK]: "bg-blue-500",
   [LinkCategory.PERSONAL]: "bg-green-500",
   [LinkCategory.STUDY]: "bg-yellow-500",
   [LinkCategory.OTHER]: "bg-gray-500",
 }
-
-const categoryOptions = Object.values(LinkCategory).map((cat) => ({
-  value: cat,
-  label: cat.charAt(0) + cat.slice(1).toLowerCase(),
-}))
 
 export function LinksPanel() {
   const listRef = useRef<HTMLUListElement>(null)
@@ -51,11 +42,8 @@ export function LinksPanel() {
     [],
   )
   const [editingId, setEditingId] = useState<string | null>(null)
-  const { isAdding, openAdd, closeAdd } = usePanelAdd()
-  const addingLink = isAdding("links")
+  const { openModal } = useModalOpen()
   const [searchQuery, setSearchQuery] = useState<string>("")
-
-  const { register, control, handleSubmit, reset } = useForm<LinkFormData>()
 
   const handleSortEnd = useCallback(
     (evt: SortableJS.SortableEvent) => {
@@ -89,21 +77,6 @@ export function LinksPanel() {
     setLinks(links.filter((link) => link.id !== id))
   }
 
-  const handleAddLink = (data: LinkFormData) => {
-    const { category, url, title } = data
-    setLinks([...links, { id: nanoid(), category, url, title }])
-    closeAdd()
-  }
-
-  const handleEditLink = (data: LinkFormData) => {
-    const { category, url, title } = data
-    const newLinks = [...links]
-    const index = newLinks.findIndex((link) => link.id === editingId!)
-    newLinks[index] = { id: editingId!, category, url, title }
-    setLinks(newLinks)
-    setEditingId(null)
-  }
-
   const filteredLinks = useMemo(() => {
     if (searchQuery.trim() === "") return links
     const fuse = new Fuse(links, {
@@ -118,22 +91,23 @@ export function LinksPanel() {
       <div className="flex gap-4 items-center mb-4 flex-shrink-0">
         <h2 className="font-bold text-2xl flex items-center">Links</h2>
 
-        <div className="flex w-56 items-center gap-2 mr-auto p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
-          <input
+        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
+          <Input
             type="text"
-            placeholder="Search links..."
-            className="w-full outline-none bg-transparent text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
+            placeholder="Search statuses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            variant="ghost"
           />
           <Search size={16} className="text-[rgb(var(--muted))]" />
         </div>
 
         <Button
           onClick={() => {
-            reset({ category: "" as LinkCategory, url: "", title: "" })
-            openAdd("links")
+            setEditingId(null)
+            openModal("links")
           }}
+          variant="secondary"
         >
           <Plus size={20} />
         </Button>
@@ -166,11 +140,7 @@ export function LinksPanel() {
                       onClick={(e) => {
                         e.preventDefault()
                         setEditingId(link.id)
-                        reset({
-                          category: link.category,
-                          url: link.url,
-                          title: link.title,
-                        })
+                        openModal("links")
                       }}
                       className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
                     >
@@ -206,67 +176,12 @@ export function LinksPanel() {
           )}
         </AnimatePresence>
       </ul>
-      <Modal
-        isOpen={addingLink || editingId !== null}
-        onClose={() => {
-          closeAdd()
-          setEditingId(null)
-        }}
-      >
-        <h2 className="font-bold text-2xl mb-4">
-          {addingLink ? "Add Link" : "Edit Link"}
-        </h2>
-        <form
-          onSubmit={handleSubmit(addingLink ? handleAddLink : handleEditLink)}
-          className="flex flex-col gap-2 p-2 w-96"
-        >
-          <Controller
-            name="category"
-            control={control}
-            defaultValue={"" as LinkCategory}
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                searchable
-                clearable
-                onChange={field.onChange}
-                options={categoryOptions}
-              />
-            )}
-          />
-          <input
-            {...register("title")}
-            placeholder="Title"
-            required
-            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
-          />
-          <input
-            {...register("url")}
-            type="url"
-            placeholder="URL"
-            required
-            className="p-2 border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--background))] text-[rgb(var(--foreground))] placeholder:text-[rgb(var(--muted))]"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                closeAdd()
-                setEditingId(null)
-              }}
-              className="px-4 py-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg bg-[rgb(var(--primary))] text-white hover:bg-[rgb(var(--primary-hover))] transition-colors"
-            >
-              {addingLink ? "Add" : "Save"}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <LinkFormModal
+        links={links}
+        setLinks={setLinks}
+        editingId={editingId}
+        setEditingId={setEditingId}
+      />
     </Panel>
   )
 }

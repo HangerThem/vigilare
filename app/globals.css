@@ -9,8 +9,8 @@
   --border-hover: 163 163 163;
   --card: 255 255 255;
   --card-hover: 250 250 250;
-  --primary: 37 99 235;
-  --primary-hover: 29 78 216;
+  --primary: 23 23 23;
+  --primary-hover: 64 64 64;
 }
 
 .dark {
@@ -22,8 +22,13 @@
   --border-hover: 115 115 115;
   --card: 38 38 38;
   --card-hover: 45 45 45;
-  --primary: 59 130 246;
-  --primary-hover: 96 165 250;
+  --primary: 255 255 255;
+  --primary-hover: 230 230 230;
+}
+
+.disable-transitions,
+.disable-transitions * {
+  transition: none !important;
 }
 
 body {

@@ -5,9 +5,12 @@ import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { createPopper, Instance as PopperInstance } from "@popperjs/core"
 import Fuse from "fuse.js"
+import { Check, ChevronDown, Search, X } from "lucide-react"
+import { cn } from "@/utils/cn"
+import { Input } from "./Input"
 
 export interface SelectOption {
-  value: string
+  value: string | number
   label: string
   disabled?: boolean
   icon?: React.ReactNode
@@ -16,8 +19,8 @@ export interface SelectOption {
 
 interface SelectProps {
   options: SelectOption[]
-  value?: string | null
-  onChange?: (value: string | null) => void
+  value?: string | number | null
+  onChange?: (value: string | number | null) => void
   placeholder?: string
   disabled?: boolean
   searchable?: boolean
@@ -216,36 +219,20 @@ export function Select({
   const dropdown = isOpen ? (
     <div
       ref={dropdownRef}
-      className="z-50 bg-[rgb(var(--card))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden"
+      className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden"
       style={{ position: "absolute", top: 0, left: 0 }}
     >
       {searchable && (
-        <div className="p-2 border-b border-[rgb(var(--border))]">
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(var(--muted))]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-[rgb(var(--border))] rounded-md 
-                    bg-[rgb(var(--background))] text-[rgb(var(--foreground))]
-                    focus:outline-none focus:border-[rgb(var(--border-hover))] focus:ring-2 focus:ring-[rgb(var(--border))]"
-            />
-          </div>
+        <div className="flex gap-2 items-center p-2 border-b border-[rgb(var(--border))]">
+          <Search size={16} className="text-[rgb(var(--muted))]" />
+          <Input
+            ref={searchInputRef}
+            type="text"
+            variant="ghost"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder={searchPlaceholder}
+          />
         </div>
       )}
 
@@ -292,19 +279,7 @@ export function Select({
                   </div>
                 </div>
                 {isSelected && (
-                  <svg
-                    className="w-4 h-4 text-[rgb(var(--foreground))] shrink-0 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <Check size={16} className="text-[rgb(var(--primary))]" />
                 )}
               </div>
             )
@@ -315,18 +290,19 @@ export function Select({
   ) : null
 
   return (
-    <div className={`relative w-full ${className}`} onKeyDown={handleKeyDown}>
+    <div className={cn("relative w-full", className)} onKeyDown={handleKeyDown}>
       <motion.div
         ref={triggerRef}
-        whileTap={disabled ? undefined : { scale: 0.99 }}
+        whileTap={disabled ? undefined : { scale: 0.98 }}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`
-          flex items-center justify-between min-h-[42px] px-3 py-2 
-          rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]
-          transition-colors duration-200 cursor-pointer
-          ${isOpen ? "border-[rgb(var(--border-hover))] ring-2 ring-[rgb(var(--border))]" : ""}
-          ${disabled ? "opacity-50 cursor-not-allowed bg-[rgb(var(--card-hover))]" : "hover:border-[rgb(var(--border-hover))]"}
-        `}
+        className={cn(
+          "flex items-center justify-between min-h-[42px] px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--background))] transition-colors duration-200 cursor-pointer",
+          isOpen
+            ? "border-[rgb(var(--primary))]"
+            : disabled
+              ? "opacity-50 cursor-not-allowed bg-[rgb(var(--card-hover))]"
+              : "hover:border-[rgb(var(--border-hover))]",
+        )}
         tabIndex={disabled ? -1 : 0}
         role="combobox"
         aria-expanded={isOpen}
@@ -351,38 +327,18 @@ export function Select({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleClear}
-              className="p-1 rounded hover:bg-[rgb(var(--card-hover))] text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))]"
+              className="p-1 rounded hover:bg-[rgb(var(--card-hover))] text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] cursor-pointer"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X size={16} />
             </motion.button>
           )}
-          <motion.svg
+          <motion.span
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.2 }}
             className="w-4 h-4 text-[rgb(var(--muted))]"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </motion.svg>
+            <ChevronDown size={16} />
+          </motion.span>
         </div>
       </motion.div>
 
