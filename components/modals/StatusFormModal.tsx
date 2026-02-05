@@ -1,9 +1,9 @@
 import Modal from "@/components/modals/Modal"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { useModalOpen } from "@/context/ModalOpenContext"
+import { useModal } from "@/context/ModalContext"
+import { useStatuses, StatusType, StatusState } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { StatusType, StatusState } from "@/components/panels/StatusPanel"
 import { nanoid } from "nanoid/non-secure"
 import { useEffect } from "react"
 import { Select } from "../ui/Select"
@@ -18,22 +18,17 @@ enum StatusOptions {
 
 type StatusFormData = Omit<StatusType, "id" | "state">
 
-export interface StatusFormModalProps {
-  statuses: StatusType[]
-  setStatuses: (
-    statuses: StatusType[] | ((prev: StatusType[]) => StatusType[]),
-  ) => void
-  editingId: string | null
-  setEditingId: (id: string | null) => void
-}
-
-export default function StatusFormModal({
-  statuses,
-  setStatuses,
-  editingId,
-  setEditingId,
-}: StatusFormModalProps) {
-  const { closeModal, isModalOpen } = useModalOpen()
+export default function StatusFormModal() {
+  const {
+    items: statuses,
+    add,
+    update,
+    editingId,
+    setEditingId,
+    getEditing,
+    setItems: setStatuses,
+  } = useStatuses()
+  const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("status")
 
   const { register, control, handleSubmit, reset } = useForm<StatusFormData>()
@@ -41,10 +36,7 @@ export default function StatusFormModal({
   const handleAddStatus = async (data: StatusFormData) => {
     const { url, title, option } = data
     const newStatusId = nanoid()
-    setStatuses([
-      ...statuses,
-      { id: newStatusId, url, title, option, state: "unknown" },
-    ])
+    add({ id: newStatusId, url, title, option, state: "unknown" })
     closeModal()
     const state = await fetch(url)
       .then((res) => (res.ok ? "up" : "down"))
@@ -60,14 +52,13 @@ export default function StatusFormModal({
 
   const handleEditStatus = (data: StatusFormData) => {
     const { url, title, option } = data
-    const newStatuses = [...statuses]
-    const index = newStatuses.findIndex((status) => status.id === editingId!)
-    const oldStatus = newStatuses[index]
-    newStatuses[index] = { ...oldStatus, url, title, option }
-    setStatuses(newStatuses)
+    const oldStatus = statuses.find((s) => s.id === editingId)
+    if (editingId) {
+      update(editingId, { url, title, option })
+    }
     setEditingId(null)
     closeModal()
-    if (oldStatus.url !== url) {
+    if (oldStatus && oldStatus.url !== url) {
       fetch(url)
         .then((res) => (res.ok ? "up" : "down"))
         .catch(() => "down")
@@ -90,19 +81,17 @@ export default function StatusFormModal({
       return
     }
 
-    if (editingId) {
-      const status = statuses.find((s) => s.id === editingId)
-      if (status) {
-        reset({
-          url: status.url,
-          title: status.title,
-          option: status.option,
-        })
-      }
+    const editing = getEditing()
+    if (editing) {
+      reset({
+        url: editing.url,
+        title: editing.title,
+        option: editing.option,
+      })
     } else {
       reset({ url: "", title: "", option: undefined })
     }
-  }, [isOpen, editingId, statuses, reset, setEditingId])
+  }, [isOpen, editingId, reset, setEditingId, getEditing])
 
   return (
     <Modal name="status">

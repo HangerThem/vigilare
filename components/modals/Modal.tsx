@@ -1,6 +1,6 @@
 "use client"
 
-import { ModalName, useModalOpen } from "@/context/ModalOpenContext"
+import { ModalName, useModal } from "@/context/ModalContext"
 import { motion, AnimatePresence } from "framer-motion"
 import { ReactNode, useCallback, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -12,7 +12,7 @@ interface ModalProps {
 }
 
 export default function Modal({ name, onClose, children }: ModalProps) {
-  const { isModalOpen, closeModal } = useModalOpen()
+  const { isModalOpen, closeModal } = useModal()
   const onCloseRef = useRef(onClose)
 
   useEffect(() => {

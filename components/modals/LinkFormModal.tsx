@@ -1,28 +1,17 @@
 import Modal from "@/components/modals/Modal"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { useModalOpen } from "@/context/ModalOpenContext"
+import { useModal } from "@/context/ModalContext"
+import { useLinks, LinkType, LinkCategory } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { LinkType, LinkCategory } from "@/components/panels/LinksPanel"
 import { nanoid } from "nanoid/non-secure"
 import { useEffect, useState } from "react"
 import { Select } from "../ui/Select"
 
 type LinkFormData = Omit<LinkType, "id">
 
-export interface LinkFormModalProps {
-  links: LinkType[]
-  setLinks: (links: LinkType[]) => void
-  editingId: string | null
-  setEditingId: (id: string | null) => void
-}
-
-export default function LinkFormModal({
-  links,
-  setLinks,
-  editingId,
-  setEditingId,
-}: LinkFormModalProps) {
+export default function LinkFormModal() {
+  const { add, update, editingId, setEditingId, getEditing } = useLinks()
   const [categoryOptions] = useState(
     Object.values(LinkCategory).map((cat) => ({
       value: cat,
@@ -30,23 +19,22 @@ export default function LinkFormModal({
     })),
   )
 
-  const { closeModal, isModalOpen } = useModalOpen()
+  const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("links")
 
   const { register, control, handleSubmit, reset } = useForm<LinkFormData>()
 
   const handleAddLink = (data: LinkFormData) => {
     const { category, url, title } = data
-    setLinks([...links, { id: nanoid(), category, url, title }])
+    add({ id: nanoid(), category, url, title })
     closeModal()
   }
 
   const handleEditLink = (data: LinkFormData) => {
     const { category, url, title } = data
-    const newLinks = [...links]
-    const index = newLinks.findIndex((link) => link.id === editingId!)
-    newLinks[index] = { id: editingId!, category, url, title }
-    setLinks(newLinks)
+    if (editingId) {
+      update(editingId, { category, url, title })
+    }
     setEditingId(null)
     closeModal()
   }
@@ -54,23 +42,21 @@ export default function LinkFormModal({
   useEffect(() => {
     if (!isOpen) {
       setEditingId(null)
-      reset({ category: "" as LinkCategory, url: "", title: "" })
+      reset({ category: LinkCategory.OTHER, url: "", title: "" })
       return
     }
 
-    if (editingId) {
-      const link = links.find((l) => l.id === editingId)
-      if (link) {
-        reset({
-          category: link.category,
-          url: link.url,
-          title: link.title,
-        })
-      }
+    const editing = getEditing()
+    if (editing) {
+      reset({
+        category: editing.category,
+        url: editing.url,
+        title: editing.title,
+      })
     } else {
-      reset({ category: "" as LinkCategory, url: "", title: "" })
+      reset({ category: LinkCategory.OTHER, url: "", title: "" })
     }
-  }, [isOpen, editingId, links, reset, setEditingId])
+  }, [isOpen, editingId, reset, setEditingId, getEditing])
 
   return (
     <Modal name="links">

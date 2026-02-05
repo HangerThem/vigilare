@@ -1,13 +1,16 @@
 "use client"
 
-import { ModalOpenProvider } from "@/context/ModalOpenContext"
+import { DataProvider } from "@/context/DataContext"
+import { ModalOpenProvider } from "@/context/ModalContext"
 import { ThemeProvider } from "@/context/ThemeContext"
 import { ReactNode } from "react"
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
-      <ModalOpenProvider>{children}</ModalOpenProvider>
+      <DataProvider>
+        <ModalOpenProvider>{children}</ModalOpenProvider>
+      </DataProvider>
     </ThemeProvider>
   )
 }

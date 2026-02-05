@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useLocalStorageState } from "./useLocalStorageState"
-import { StatusType } from "@/components/panels/StatusPanel"
+import { StatusType } from "@/context/DataContext"
 import { useOnline } from "./useOnline"
 
 export type NotificationPermission = "default" | "granted" | "denied"

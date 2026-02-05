@@ -7,12 +7,12 @@ import { NotesPanel } from "@/components/panels/NotesPanel"
 import { StatusPanel } from "@/components/panels/StatusPanel"
 import { useEffect } from "react"
 import CommandPaletteModal from "@/components/modals/CommandPaletteModal"
-import { useModalOpen } from "@/context/ModalOpenContext"
+import { useModal } from "@/context/ModalContext"
 import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
 import ShortcutsModal, { shortcuts } from "@/components/modals/ShortcutsModal"
 
 export default function Home() {
-  const { openModal, isModalOpen, closeModal } = useModalOpen()
+  const { openModal, isModalOpen, closeModal } = useModal()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

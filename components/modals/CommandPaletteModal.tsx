@@ -2,9 +2,9 @@
 
 import Modal from "./Modal"
 import Fuse from "fuse.js"
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { Input } from "../ui/Input"
-import { useModalOpen } from "@/context/ModalOpenContext"
+import { useModal } from "@/context/ModalContext"
 import { useTheme } from "@/context/ThemeContext"
 import {
   Download,
@@ -37,13 +37,14 @@ export type CommandWithCommands = CommandBase & {
 type Command = CommandWithAction | CommandWithCommands
 
 export default function CommandPaletteModal() {
-  const { isModalOpen, closeModal } = useModalOpen()
+  const { isModalOpen, closeModal } = useModal()
   const [query, setQuery] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
   const { setTheme, getIcon, themeOptions } = useTheme()
-  const { openModal } = useModalOpen()
+  const { openModal } = useModal()
 
   const isOpen = isModalOpen("commandPalette")
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([])
 
   const generateCommands = useCallback(() => {
     const commands: Command[] = [
@@ -199,6 +200,15 @@ export default function CommandPaletteModal() {
   }, [])
 
   useEffect(() => {
+    if (itemRefs.current[clampedSelectedIndex]) {
+      itemRefs.current[clampedSelectedIndex]?.scrollIntoView({
+        block: "center",
+        behavior: "smooth",
+      })
+    }
+  }, [clampedSelectedIndex])
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return
 
@@ -253,6 +263,9 @@ export default function CommandPaletteModal() {
           {results.map((command, index) => (
             <li
               key={command.name}
+              ref={(el) => {
+                itemRefs.current[index] = el
+              }}
               onClick={() =>
                 command.type === "commands"
                   ? handleCommandsUpdate(command.commands)

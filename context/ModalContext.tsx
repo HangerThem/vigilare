@@ -48,10 +48,10 @@ export function ModalOpenProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useModalOpen() {
+export function useModal() {
   const context = useContext(ModalOpenContext)
   if (!context) {
-    throw new Error("useModalOpen must be used within a ModalOpenProvider")
+    throw new Error("useModal must be used within a ModalOpenProvider")
   }
   return context
 }

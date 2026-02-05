@@ -58,7 +58,7 @@ export function Select({
     () =>
       new Fuse(options, {
         keys: ["label", "description"],
-        threshold: 0.5,
+        threshold: 0.3,
         ignoreLocation: true,
       }),
     [options],

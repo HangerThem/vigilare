@@ -2,9 +2,9 @@ import Modal from "@/components/modals/Modal"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
-import { useModalOpen } from "@/context/ModalOpenContext"
+import { useModal } from "@/context/ModalContext"
+import { useCommands, CommandType } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { CommandType } from "@/components/panels/CommandsPanel"
 import { nanoid } from "nanoid/non-secure"
 import { useEffect } from "react"
 import hljs from "highlight.js"
@@ -12,36 +12,24 @@ import { Select } from "../ui/Select"
 
 type CommandFormData = Omit<CommandType, "id">
 
-export interface CommandFormModalProps {
-  commands: CommandType[]
-  setCommands: (commands: CommandType[]) => void
-  editingId: string | null
-  setEditingId: (id: string | null) => void
-}
-
-export default function CommandFormModal({
-  commands,
-  setCommands,
-  editingId,
-  setEditingId,
-}: CommandFormModalProps) {
-  const { closeModal, isModalOpen } = useModalOpen()
+export default function CommandFormModal() {
+  const { add, update, editingId, setEditingId, getEditing } = useCommands()
+  const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("commands")
 
   const { register, control, handleSubmit, reset } = useForm<CommandFormData>()
 
   const handleAddCommand = (data: CommandFormData) => {
     const { language, code, title } = data
-    setCommands([...commands, { id: nanoid(), code, title, language }])
+    add({ id: nanoid(), code, title, language })
     closeModal()
   }
 
   const handleEditCommand = (data: CommandFormData) => {
     const { language, code, title } = data
-    const newCommands = [...commands]
-    const index = newCommands.findIndex((command) => command.id === editingId!)
-    newCommands[index] = { id: editingId!, code, title, language }
-    setCommands(newCommands)
+    if (editingId) {
+      update(editingId, { code, title, language })
+    }
     setEditingId(null)
     closeModal()
   }
@@ -53,19 +41,17 @@ export default function CommandFormModal({
       return
     }
 
-    if (editingId) {
-      const command = commands.find((cmd) => cmd.id === editingId)
-      if (command) {
-        reset({
-          language: command.language,
-          title: command.title,
-          code: command.code,
-        })
-      }
+    const editing = getEditing()
+    if (editing) {
+      reset({
+        language: editing.language,
+        title: editing.title,
+        code: editing.code,
+      })
     } else {
       reset({ language: "", title: "", code: "" })
     }
-  }, [isOpen, editingId, commands, reset, setEditingId])
+  }, [isOpen, editingId, reset, setEditingId, getEditing])
 
   return (
     <Modal name="commands">

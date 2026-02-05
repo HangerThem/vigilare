@@ -1,15 +1,24 @@
 "use client"
 
-import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import Modal from "./Modal"
 import Fuse from "fuse.js"
 import { useState, useMemo, useCallback } from "react"
-import { LinkType } from "../panels/LinksPanel"
-import { NoteType } from "../panels/NotesPanel"
-import { CommandType } from "../panels/CommandsPanel"
-import { StatusType } from "../panels/StatusPanel"
+import {
+  useLinks,
+  useNotes,
+  useCommands,
+  useStatuses,
+  LinkType,
+  NoteType,
+  CommandType,
+  StatusType,
+} from "@/context/DataContext"
 import { Input } from "../ui/Input"
-import { useModalOpen } from "@/context/ModalOpenContext"
+import { useModal } from "@/context/ModalContext"
+import CommandItem from "../panels/items/CommandItem"
+import NoteItem from "../panels/items/NoteItem"
+import LinkItem from "../panels/items/LinkItem"
+import StatusItem from "../panels/items/StatusItem"
 
 enum ResultType {
   LINK = "link",
@@ -24,15 +33,12 @@ type SearchResult = {
 }
 
 export default function GlobalSearchModal() {
-  const { isModalOpen } = useModalOpen()
+  const { isModalOpen } = useModal()
   const [query, setQuery] = useState("")
-  const { value: links } = useLocalStorageState<LinkType[]>("links", [])
-  const { value: notes } = useLocalStorageState<NoteType[]>("notes", [])
-  const { value: commands } = useLocalStorageState<CommandType[]>(
-    "commands",
-    [],
-  )
-  const { value: statuses } = useLocalStorageState<StatusType[]>("status", [])
+  const { items: links } = useLinks()
+  const { items: notes } = useNotes()
+  const { items: commands } = useCommands()
+  const { items: statuses } = useStatuses()
 
   const isOpen = isModalOpen("globalSearch")
 
@@ -67,21 +73,6 @@ export default function GlobalSearchModal() {
     return fuse.search(effectiveQuery).map((result) => result.item)
   }, [isOpen, query, links, notes, commands, statuses])
 
-  const handleResultSelect = (result: SearchResult) => {
-    switch (result.type) {
-      case "link":
-        window.open((result.item as LinkType).url, "_blank")
-        break
-      case "note":
-        break
-      case "command":
-        navigator.clipboard.writeText((result.item as CommandType).code)
-        break
-      case "status":
-        break
-    }
-  }
-
   const handleClose = useCallback(() => {
     setQuery("")
   }, [])
@@ -89,7 +80,7 @@ export default function GlobalSearchModal() {
   return (
     <Modal name="globalSearch" onClose={handleClose}>
       <h1 className="text-2xl font-bold mb-4">Global Search</h1>
-      <div className="w-120">
+      <div className="w-200">
         <Input
           type="text"
           value={query}
@@ -98,94 +89,82 @@ export default function GlobalSearchModal() {
           className="mb-4"
           autoFocus
         />
-        {results.filter((result) => result.type === ResultType.LINK).length >
-          0 && (
-          <>
-            <h2 className="text-lg font-semibold mb-2">Links</h2>
-            {results
-              .filter((result) => result.type === ResultType.LINK)
-              .map((result, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
-                >
-                  <div className="font-medium">
-                    {(result.item as LinkType).title}
-                  </div>
-                  <div className="text-sm text-[rgb(var(--muted))]">
-                    {(result.item as LinkType).url}
-                  </div>
-                </div>
-              ))}
-          </>
-        )}
-        {results.filter((result) => result.type === ResultType.NOTE).length >
-          0 && (
-          <>
-            <h2 className="text-lg font-semibold mb-2">Notes</h2>
-            {results
-              .filter((result) => result.type === ResultType.NOTE)
-              .map((result, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
-                >
-                  <div className="font-medium">
-                    {(result.item as NoteType).title}
-                  </div>
-                  <div className="text-sm text-[rgb(var(--muted))]">
-                    {(result.item as NoteType).content}
-                  </div>
-                </div>
-              ))}
-          </>
-        )}
-        {results.filter((result) => result.type === ResultType.COMMAND).length >
-          0 && (
-          <>
-            <h2 className="text-lg font-semibold mb-2">Commands</h2>
-            {results
-              .filter((result) => result.type === ResultType.COMMAND)
-              .map((result, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
-                >
-                  <div className="font-medium">
-                    {(result.item as CommandType).code}
-                  </div>
-                </div>
-              ))}
-          </>
-        )}
-        {results.filter((result) => result.type === ResultType.STATUS).length >
-          0 && (
-          <>
-            <h2 className="text-lg font-semibold mb-2">Statuses</h2>
-            {results
-              .filter((result) => result.type === ResultType.STATUS)
-              .map((result, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleResultSelect(result)}
-                  className="p-2 mb-2 border border-[rgb(var(--border))] rounded cursor-pointer hover:bg-[rgb(var(--card-hover))] transition-colors"
-                >
-                  <div className="font-medium">
-                    {(result.item as StatusType).title}
-                  </div>
-                  <div className="text-sm text-[rgb(var(--muted))]">
-                    {(result.item as StatusType).url}
-                  </div>
-                </div>
-              ))}
-          </>
-        )}
-        {results.length === 0 && (
-          <div className="p-2 text-[rgb(var(--muted))]">No results found.</div>
-        )}
+
+        <div className="max-h-120 overflow-y-auto pr-3">
+          {results.filter((result) => result.type === ResultType.LINK).length >
+            0 && (
+            <>
+              <h2 className="text-lg font-semibold mb-2">Links</h2>
+              <ul className="space-y-2 mb-4">
+                {results
+                  .filter((result) => result.type === ResultType.LINK)
+                  .map((result, index) => (
+                    <LinkItem
+                      link={result.item as LinkType}
+                      key={index}
+                      movable={false}
+                    />
+                  ))}
+              </ul>
+            </>
+          )}
+          {results.filter((result) => result.type === ResultType.NOTE).length >
+            0 && (
+            <>
+              <h2 className="text-lg font-semibold mb-2">Notes</h2>
+              <ul className="space-y-2 mb-4">
+                {results
+                  .filter((result) => result.type === ResultType.NOTE)
+                  .map((result, index) => (
+                    <NoteItem
+                      note={result.item as NoteType}
+                      key={index}
+                      movable={false}
+                    />
+                  ))}
+              </ul>
+            </>
+          )}
+          {results.filter((result) => result.type === ResultType.COMMAND)
+            .length > 0 && (
+            <>
+              <h2 className="text-lg font-semibold mb-2">Commands</h2>
+              <ul className="space-y-2 mb-4">
+                {results
+                  .filter((result) => result.type === ResultType.COMMAND)
+                  .map((result, index) => (
+                    <CommandItem
+                      command={result.item as CommandType}
+                      key={index}
+                      movable={false}
+                    />
+                  ))}
+              </ul>
+            </>
+          )}
+          {results.filter((result) => result.type === ResultType.STATUS)
+            .length > 0 && (
+            <>
+              <h2 className="text-lg font-semibold mb-2">Statuses</h2>
+              <ul className="space-y-2 mb-4">
+                {results
+                  .filter((result) => result.type === ResultType.STATUS)
+                  .map((result) => (
+                    <StatusItem
+                      status={result.item as StatusType}
+                      movable={false}
+                      key={result.item.id}
+                    />
+                  ))}
+              </ul>
+            </>
+          )}
+          {results.length === 0 && (
+            <div className="p-2 text-[rgb(var(--muted))]">
+              No results found.
+            </div>
+          )}
+        </div>
       </div>
     </Modal>
   )

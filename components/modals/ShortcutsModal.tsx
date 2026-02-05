@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Modal from "./Modal"
 import { Command } from "lucide-react"
-import { ModalName } from "@/context/ModalOpenContext"
+import { ModalName } from "@/context/ModalContext"
 
 interface Shortcut {
   keys: string[]
