@@ -1,15 +1,13 @@
 import { GripVertical, Pencil, Trash } from "lucide-react"
-import {
-  NoteCategory,
-  NoteType,
-  useNotes,
-} from "@/context/DataContext"
+import { NoteCategory, NoteType, useNotes } from "@/context/DataContext"
 import { motion } from "framer-motion"
 import { useModal } from "@/context/ModalContext"
+import { useSettings } from "@/context/SettingsContext"
 
 interface NoteItemProps {
   note: NoteType
   movable?: boolean
+  compact?: boolean
 }
 
 const categoryColors: Record<NoteCategory, string> = {
@@ -19,9 +17,16 @@ const categoryColors: Record<NoteCategory, string> = {
   [NoteCategory.OTHER]: "bg-gray-500",
 }
 
-export default function NoteItem({ note, movable = true }: NoteItemProps) {
+export default function NoteItem({
+  note,
+  movable = true,
+  compact: compactProp,
+}: NoteItemProps) {
   const { setEditingId, remove } = useNotes()
   const { openModal } = useModal()
+  const { settings } = useSettings()
+
+  const compact = compactProp ?? settings.compactMode
 
   return (
     <motion.li
@@ -30,9 +35,11 @@ export default function NoteItem({ note, movable = true }: NoteItemProps) {
       exit={{ opacity: 0, scale: 0 }}
       transition={{ duration: 0.2 }}
       key={note.id}
-      className="relative overflow-hidden flex items-center p-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors"
+      className={`relative overflow-hidden flex items-center rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors ${compact ? "p-1.5" : "p-2"}`}
     >
-      <div className="flex gap-2 absolute top-2 right-2">
+      <div
+        className={`flex gap-2 absolute ${compact ? "top-1.5 right-1.5" : "top-2 right-2"}`}
+      >
         <button
           onClick={(e) => {
             e.preventDefault()
@@ -41,7 +48,7 @@ export default function NoteItem({ note, movable = true }: NoteItemProps) {
           }}
           className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
         >
-          <Pencil size={16} />
+          <Pencil size={compact ? 14 : 16} />
         </button>
 
         <button
@@ -51,26 +58,30 @@ export default function NoteItem({ note, movable = true }: NoteItemProps) {
           }}
           className="text-[rgb(var(--muted))] hover:text-red-500 transition-colors cursor-pointer"
         >
-          <Trash size={16} />
+          <Trash size={compact ? 14 : 16} />
         </button>
       </div>
 
       <div
-        className={`absolute w-2 h-full left-0 top-0 ${categoryColors[note.category]}`}
+        className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0 top-0 ${categoryColors[note.category]}`}
       ></div>
 
       {movable && (
         <GripVertical
-          size="20"
+          size={compact ? 16 : 20}
           className="mx-1 mt-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors flex-shrink-0"
         />
       )}
 
       <div className={!movable ? "ml-2" : "mr-auto min-w-0 flex-1"}>
-        <span className="block font-medium">{note.title}</span>
-        <span className="block text-sm text-[rgb(var(--muted))] whitespace-pre-wrap">
-          {note.content}
+        <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
+          {note.title}
         </span>
+        {!compact && (
+          <span className="block text-sm text-[rgb(var(--muted))] whitespace-pre-wrap">
+            {note.content}
+          </span>
+        )}
       </div>
     </motion.li>
   )

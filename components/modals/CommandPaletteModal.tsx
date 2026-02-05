@@ -14,10 +14,12 @@ import {
   Notebook,
   PaintRoller,
   Search,
+  Settings,
   SquareSlash,
   Terminal,
 } from "lucide-react"
 import { downloadAppData, importAllAppData } from "@/utils/appData"
+import { useSettings } from "@/context/SettingsContext"
 
 interface CommandBase {
   icon?: React.ReactNode
@@ -90,10 +92,17 @@ export default function CommandPaletteModal() {
       },
       {
         type: "action",
+        icon: <Settings size={16} />,
+        name: "Open Settings",
+        action: () => {
+          openModal("settings")
+        },
+      },
+      {
+        type: "action",
         icon: <Search size={16} />,
         name: "Global Search",
         action: () => {
-          closeModal()
           openModal("globalSearch")
         },
       },
@@ -102,7 +111,6 @@ export default function CommandPaletteModal() {
         icon: <SquareSlash size={16} />,
         name: "Shortcuts",
         action: () => {
-          closeModal()
           openModal("shortcuts")
         },
       },
@@ -158,10 +166,12 @@ export default function CommandPaletteModal() {
     ]
 
     return commands
-  }, [openModal, getIcon, setTheme, themeOptions, closeModal])
+  }, [openModal, getIcon, setTheme, themeOptions])
 
   const [commandsState, setCommandsState] =
     useState<Command[]>(generateCommands())
+
+  const { settings } = useSettings()
 
   const results = useMemo(() => {
     if (query === "") {
@@ -170,11 +180,11 @@ export default function CommandPaletteModal() {
 
     const fuse = new Fuse(commandsState, {
       keys: ["name"],
-      threshold: 0.3,
+      threshold: settings.fuzzySearchThreshold,
     })
 
     return fuse.search(query).map((result) => result.item)
-  }, [query, commandsState])
+  }, [query, commandsState, settings.fuzzySearchThreshold])
 
   const clampedSelectedIndex = useMemo(() => {
     return Math.min(selectedIndex, Math.max(0, results.length - 1))
@@ -250,16 +260,16 @@ export default function CommandPaletteModal() {
 
   return (
     <Modal name="commandPalette" onClose={handleClose}>
-      <div className="w-96">
+      <div className="w-full sm:w-80 md:w-96">
         <Input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Type a command..."
-          className="mb-4"
+          className="mb-3 sm:mb-4"
           autoFocus
         />
-        <ul className="max-h-64 overflow-y-auto pr-3">
+        <ul className="max-h-48 sm:max-h-56 md:max-h-64 overflow-y-auto pr-2 sm:pr-3">
           {results.map((command, index) => (
             <li
               key={command.name}

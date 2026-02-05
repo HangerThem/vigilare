@@ -19,6 +19,7 @@ import CommandItem from "../panels/items/CommandItem"
 import NoteItem from "../panels/items/NoteItem"
 import LinkItem from "../panels/items/LinkItem"
 import StatusItem from "../panels/items/StatusItem"
+import { useSettings } from "@/context/SettingsContext"
 
 enum ResultType {
   LINK = "link",
@@ -35,6 +36,7 @@ type SearchResult = {
 export default function GlobalSearchModal() {
   const { isModalOpen } = useModal()
   const [query, setQuery] = useState("")
+  const { settings } = useSettings()
   const { items: links } = useLinks()
   const { items: notes } = useNotes()
   const { items: commands } = useCommands()
@@ -67,11 +69,19 @@ export default function GlobalSearchModal() {
 
     const fuse = new Fuse(allItems, {
       keys: ["item.url", "item.code", "item.title", "item.content"],
-      threshold: 0.3,
+      threshold: settings.fuzzySearchThreshold,
     })
 
     return fuse.search(effectiveQuery).map((result) => result.item)
-  }, [isOpen, query, links, notes, commands, statuses])
+  }, [
+    isOpen,
+    query,
+    links,
+    notes,
+    commands,
+    statuses,
+    settings.fuzzySearchThreshold,
+  ])
 
   const handleClose = useCallback(() => {
     setQuery("")
@@ -79,23 +89,31 @@ export default function GlobalSearchModal() {
 
   return (
     <Modal name="globalSearch" onClose={handleClose}>
-      <h1 className="text-2xl font-bold mb-4">Global Search</h1>
-      <div className="w-200">
+      <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
+        Global Search
+      </h1>
+      <div className="w-full sm:w-96 md:w-140 lg:w-200">
         <Input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search links, notes, commands..."
-          className="mb-4"
+          className="mb-3 sm:mb-4"
           autoFocus
         />
 
-        <div className="max-h-120 overflow-y-auto pr-3">
+        <div className="max-h-60 sm:max-h-80 md:max-h-120 overflow-y-auto pr-2 sm:pr-3">
           {results.filter((result) => result.type === ResultType.LINK).length >
             0 && (
             <>
-              <h2 className="text-lg font-semibold mb-2">Links</h2>
-              <ul className="space-y-2 mb-4">
+              <h2
+                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
+              >
+                Links
+              </h2>
+              <ul
+                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
+              >
                 {results
                   .filter((result) => result.type === ResultType.LINK)
                   .map((result, index) => (
@@ -111,8 +129,14 @@ export default function GlobalSearchModal() {
           {results.filter((result) => result.type === ResultType.NOTE).length >
             0 && (
             <>
-              <h2 className="text-lg font-semibold mb-2">Notes</h2>
-              <ul className="space-y-2 mb-4">
+              <h2
+                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
+              >
+                Notes
+              </h2>
+              <ul
+                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
+              >
                 {results
                   .filter((result) => result.type === ResultType.NOTE)
                   .map((result, index) => (
@@ -128,8 +152,14 @@ export default function GlobalSearchModal() {
           {results.filter((result) => result.type === ResultType.COMMAND)
             .length > 0 && (
             <>
-              <h2 className="text-lg font-semibold mb-2">Commands</h2>
-              <ul className="space-y-2 mb-4">
+              <h2
+                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
+              >
+                Commands
+              </h2>
+              <ul
+                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
+              >
                 {results
                   .filter((result) => result.type === ResultType.COMMAND)
                   .map((result, index) => (
@@ -145,8 +175,14 @@ export default function GlobalSearchModal() {
           {results.filter((result) => result.type === ResultType.STATUS)
             .length > 0 && (
             <>
-              <h2 className="text-lg font-semibold mb-2">Statuses</h2>
-              <ul className="space-y-2 mb-4">
+              <h2
+                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
+              >
+                Statuses
+              </h2>
+              <ul
+                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
+              >
                 {results
                   .filter((result) => result.type === ResultType.STATUS)
                   .map((result) => (

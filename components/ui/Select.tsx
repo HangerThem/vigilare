@@ -8,6 +8,7 @@ import Fuse from "fuse.js"
 import { Check, ChevronDown, Search, X } from "lucide-react"
 import { cn } from "@/utils/cn"
 import { Input } from "./Input"
+import { useSettings } from "@/context/SettingsContext"
 
 export interface SelectOption {
   value: string | number
@@ -47,6 +48,7 @@ export function Select({
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const { settings } = useSettings()
 
   const triggerRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -58,10 +60,9 @@ export function Select({
     () =>
       new Fuse(options, {
         keys: ["label", "description"],
-        threshold: 0.3,
-        ignoreLocation: true,
+        threshold: settings.fuzzySearchThreshold,
       }),
-    [options],
+    [options, settings.fuzzySearchThreshold],
   )
 
   const filteredOptions = useMemo(() => {
@@ -219,7 +220,7 @@ export function Select({
   const dropdown = isOpen ? (
     <div
       ref={dropdownRef}
-      className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden"
+      className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden keep-transform"
       style={{ position: "absolute", top: 0, left: 0 }}
     >
       {searchable && (

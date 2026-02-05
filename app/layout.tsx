@@ -15,6 +15,15 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "HangerThem", url: "https://hangerthem.com" }],
   creator: "HangerThem",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Vigilare",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 export const viewport: Viewport = {

@@ -27,11 +27,52 @@
 }
 
 .disable-transitions,
-.disable-transitions * {
+.disable-transitions *,
+.disable-transitions *::before,
+.disable-transitions *::after {
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  animation: none !important;
+  animation-name: none !important;
+  animation-duration: 0s !important;
+  opacity: 1 !important;
+}
+
+html.disable-animations,
+html.disable-animations *,
+html.disable-animations *::before,
+html.disable-animations *::after,
+.disable-animations,
+.disable-animations *,
+.disable-animations *::before,
+.disable-animations *::after {
   transition: none !important;
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation: none !important;
+  animation-name: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  opacity: 1 !important;
+}
+
+html.disable-animations *:not([data-popper-placement]),
+.disable-animations *:not([data-popper-placement]) {
+  transform: none !important;
 }
 
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
 }

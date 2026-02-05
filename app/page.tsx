@@ -10,9 +10,13 @@ import CommandPaletteModal from "@/components/modals/CommandPaletteModal"
 import { useModal } from "@/context/ModalContext"
 import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
 import ShortcutsModal, { shortcuts } from "@/components/modals/ShortcutsModal"
+import SettingsModal from "@/components/modals/SettingsModal"
+import ConfirmModal from "@/components/modals/ConfirmDialogModal"
+import { useSettings } from "@/context/SettingsContext"
 
 export default function Home() {
   const { openModal, isModalOpen, closeModal } = useModal()
+  const { settings } = useSettings()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,12 +46,18 @@ export default function Home() {
   }, [openModal, closeModal, isModalOpen])
 
   return (
-    <div className="relative gap-2 min-h-screen md:max-h-screen flex flex-col p-6 bg-[rgb(var(--background))]">
+    <div
+      className={`relative ${settings.compactMode ? "gap-1" : "gap-2"} min-h-screen md:max-h-screen flex flex-col ${settings.compactMode ? "p-2 sm:p-3 md:p-4" : "p-3 sm:p-4 md:p-6"} bg-[rgb(var(--background))]`}
+    >
       <CommandPaletteModal />
       <GlobalSearchModal />
       <ShortcutsModal />
+      <SettingsModal />
+      <ConfirmModal />
       <Header />
-      <main className="grid grid-cols-1 lg:grid-cols-2 gap-2 flex-1 grid-rows-2 min-h-0">
+      <main
+        className={`grid grid-cols-1 md:grid-cols-2 ${settings.compactMode ? "gap-1" : "gap-2"} flex-1 md:grid-rows-2 min-h-0 overflow-auto md:overflow-hidden pb-4 md:pb-0`}
+      >
         <LinksPanel />
         <NotesPanel />
         <CommandsPanel />

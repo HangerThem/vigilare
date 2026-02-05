@@ -5,7 +5,6 @@ import {
   useContext,
   useState,
   useCallback,
-  ReactNode,
 } from "react"
 
 export type ModalName =
@@ -16,6 +15,8 @@ export type ModalName =
   | "commandPalette"
   | "globalSearch"
   | "shortcuts"
+  | "settings"
+  | "confirm"
 
 type ModalAddContextType = {
   openModal: (modal: ModalName) => void
@@ -25,7 +26,7 @@ type ModalAddContextType = {
 
 const ModalOpenContext = createContext<ModalAddContextType | null>(null)
 
-export function ModalOpenProvider({ children }: { children: ReactNode }) {
+export function ModalOpenProvider({ children }: { children: React.ReactNode }) {
   const [currentModal, setCurrentModal] = useState<ModalName | null>(null)
 
   const openModal = useCallback((modal: ModalName) => {

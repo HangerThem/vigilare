@@ -12,6 +12,7 @@ import { useLinks } from "@/context/DataContext"
 import { useModal } from "@/context/ModalContext"
 import { Input } from "../ui/Input"
 import LinkItem from "./items/LinkItem"
+import { useSettings } from "@/context/SettingsContext"
 
 export type { LinkCategory, LinkType } from "@/context/DataContext"
 
@@ -21,6 +22,7 @@ export function LinksPanel() {
   const { items: links, reorder } = useLinks()
   const { openModal } = useModal()
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const { settings } = useSettings()
 
   const handleSortEnd = useCallback(
     (evt: SortableJS.SortableEvent) => {
@@ -48,23 +50,45 @@ export function LinksPanel() {
   const filteredLinks = useMemo(() => {
     if (searchQuery.trim() === "") return links
     const fuse = new Fuse(links, {
-      keys: ["description", "url", "category"],
-      threshold: 0.3,
+      keys: ["title", "url", "category"],
+      threshold: settings.fuzzySearchThreshold,
     })
     return fuse.search(searchQuery).map((result) => result.item)
-  }, [links, searchQuery])
+  }, [links, searchQuery, settings.fuzzySearchThreshold])
+
+  const [showAll, setShowAll] = useState(false)
+
+  const displayedLinks = useMemo(() => {
+    if (
+      showAll ||
+      settings.maxItemsPerPanel === 0 ||
+      searchQuery.trim() !== ""
+    ) {
+      return filteredLinks
+    }
+    return filteredLinks.slice(0, settings.maxItemsPerPanel)
+  }, [filteredLinks, settings.maxItemsPerPanel, showAll, searchQuery])
+
+  const hasMoreItems = filteredLinks.length > displayedLinks.length
+  const hiddenCount = filteredLinks.length - displayedLinks.length
 
   return (
     <Panel>
       <LinkFormModal />
 
-      <div className="flex gap-4 items-center mb-4 flex-shrink-0">
-        <h2 className="font-bold text-2xl flex items-center">Links</h2>
+      <div
+        className={`flex flex-wrap gap-2 ${settings.compactMode ? "sm:gap-3" : "sm:gap-4"} items-center ${settings.compactMode ? "mb-2 sm:mb-3" : "mb-3 sm:mb-4"} flex-shrink-0`}
+      >
+        <h2
+          className={`font-bold ${settings.compactMode ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} flex items-center`}
+        >
+          Links
+        </h2>
 
-        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
+        <div className="mr-auto order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
             type="text"
-            placeholder="Search statuses..."
+            placeholder="Search links..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             variant="ghost"
@@ -77,17 +101,18 @@ export function LinksPanel() {
             openModal("links")
           }}
           variant="secondary"
+          className="order-2 sm:order-3 ml-auto sm:ml-0"
         >
           <Plus size={20} />
         </Button>
       </div>
       <ul
-        className="space-y-2 relative overflow-auto flex-1 min-h-0 -mr-3 pr-3"
+        className={`${settings.compactMode ? "space-y-1" : "space-y-2"} relative overflow-auto flex-1 min-h-0 -mr-3 pr-3`}
         ref={listRef}
       >
         <AnimatePresence>
-          {filteredLinks.length > 0 ? (
-            filteredLinks.map((link) => <LinkItem link={link} key={link.id} />)
+          {displayedLinks.length > 0 ? (
+            displayedLinks.map((link) => <LinkItem link={link} key={link.id} />)
           ) : links.length === 0 ? (
             <motion.li
               initial={{ opacity: 0, scale: 0.95 }}
@@ -115,6 +140,25 @@ export function LinksPanel() {
           )}
         </AnimatePresence>
       </ul>
+      {hasMoreItems && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-2 text-sm text-[rgb(var(--primary))] hover:underline cursor-pointer flex-shrink-0"
+        >
+          Show {hiddenCount} more item{hiddenCount > 1 ? "s" : ""}...
+        </button>
+      )}
+      {showAll &&
+        settings.maxItemsPerPanel > 0 &&
+        filteredLinks.length > settings.maxItemsPerPanel &&
+        searchQuery.trim() === "" && (
+          <button
+            onClick={() => setShowAll(false)}
+            className="mt-2 text-sm text-[rgb(var(--muted))] hover:underline cursor-pointer flex-shrink-0"
+          >
+            Show less
+          </button>
+        )}
     </Panel>
   )
 }

@@ -1,16 +1,14 @@
 import { GripVertical, Pencil, Trash } from "lucide-react"
-import Link from "next/link"
-import {
-  LinkCategory,
-  LinkType,
-  useLinks,
-} from "@/context/DataContext"
+import { LinkCategory, LinkType, useLinks } from "@/context/DataContext"
 import { motion } from "framer-motion"
 import { useModal } from "@/context/ModalContext"
+import LinkWithSettings from "@/components/common/LinkWithSettings"
+import { useSettings } from "@/context/SettingsContext"
 
 interface LinkItemProps {
   link: LinkType
   movable?: boolean
+  compact?: boolean
 }
 
 const categoryColors: Record<LinkCategory, string> = {
@@ -20,9 +18,16 @@ const categoryColors: Record<LinkCategory, string> = {
   [LinkCategory.OTHER]: "bg-gray-500",
 }
 
-export default function LinkItem({ link, movable = true }: LinkItemProps) {
+export default function LinkItem({
+  link,
+  movable = true,
+  compact: compactProp,
+}: LinkItemProps) {
   const { setEditingId, remove } = useLinks()
   const { openModal } = useModal()
+  const { settings } = useSettings()
+
+  const compact = compactProp ?? settings.compactMode
 
   return (
     <motion.li
@@ -30,10 +35,12 @@ export default function LinkItem({ link, movable = true }: LinkItemProps) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0 }}
       transition={{ duration: 0.2 }}
-      className="relative overflow-hidden p-2 rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors"
+      className={`relative overflow-hidden rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] transition-colors ${compact ? "p-1.5" : "p-2"}`}
     >
-      <Link href={link.url} target="_blank" className="flex items-center">
-        <div className="flex gap-2 absolute top-2 right-2 items-center">
+      <LinkWithSettings href={link.url} className="flex items-center">
+        <div
+          className={`flex gap-2 absolute ${compact ? "top-1.5 right-1.5" : "top-2 right-2"} items-center`}
+        >
           <button
             onClick={(e) => {
               e.preventDefault()
@@ -42,7 +49,7 @@ export default function LinkItem({ link, movable = true }: LinkItemProps) {
             }}
             className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
           >
-            <Pencil size={16} />
+            <Pencil size={compact ? 14 : 16} />
           </button>
 
           <button
@@ -52,28 +59,32 @@ export default function LinkItem({ link, movable = true }: LinkItemProps) {
             }}
             className="text-[rgb(var(--muted))] hover:text-red-500 transition-colors cursor-pointer"
           >
-            <Trash size={16} />
+            <Trash size={compact ? 14 : 16} />
           </button>
         </div>
 
         <div
-          className={`absolute w-2 h-full left-0 ${categoryColors[link.category]}`}
+          className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0 ${categoryColors[link.category]}`}
         ></div>
 
         {movable && (
           <GripVertical
-            size="20"
+            size={compact ? 16 : 20}
             className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
           />
         )}
 
         <div className={!movable ? "ml-2" : "mr-auto min-w-0 flex-1"}>
-          <span className="block font-medium">{link.title}</span>
-          <span className="block text-xs text-[rgb(var(--muted))]">
-            {link.url}
+          <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
+            {link.title}
           </span>
+          {!compact && (
+            <span className="block text-xs text-[rgb(var(--muted))]">
+              {link.url}
+            </span>
+          )}
         </div>
-      </Link>
+      </LinkWithSettings>
     </motion.li>
   )
 }

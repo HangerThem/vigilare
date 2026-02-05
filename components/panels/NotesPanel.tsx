@@ -12,6 +12,7 @@ import { useNotes } from "@/context/DataContext"
 import { useModal } from "@/context/ModalContext"
 import { Input } from "../ui/Input"
 import NoteItem from "./items/NoteItem"
+import { useSettings } from "@/context/SettingsContext"
 
 export type { NoteCategory, NoteType } from "@/context/DataContext"
 
@@ -21,6 +22,7 @@ export function NotesPanel() {
   const { items: notes, reorder } = useNotes()
   const { openModal } = useModal()
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const { settings } = useSettings()
 
   const handleSortEnd = useCallback(
     (evt: SortableJS.SortableEvent) => {
@@ -49,22 +51,44 @@ export function NotesPanel() {
     if (searchQuery.trim() === "") return notes
     const fuse = new Fuse(notes, {
       keys: ["title", "content", "category"],
-      threshold: 0.3,
+      threshold: settings.fuzzySearchThreshold,
     })
     return fuse.search(searchQuery).map((result) => result.item)
-  }, [notes, searchQuery])
+  }, [notes, searchQuery, settings.fuzzySearchThreshold])
+
+  const [showAll, setShowAll] = useState(false)
+
+  const displayedNotes = useMemo(() => {
+    if (
+      showAll ||
+      settings.maxItemsPerPanel === 0 ||
+      searchQuery.trim() !== ""
+    ) {
+      return filteredNotes
+    }
+    return filteredNotes.slice(0, settings.maxItemsPerPanel)
+  }, [filteredNotes, settings.maxItemsPerPanel, showAll, searchQuery])
+
+  const hasMoreItems = filteredNotes.length > displayedNotes.length
+  const hiddenCount = filteredNotes.length - displayedNotes.length
 
   return (
     <Panel>
       <NoteFormModal />
 
-      <div className="flex gap-4 items-center mb-4 flex-shrink-0">
-        <h2 className="font-bold text-2xl flex items-center">Notes</h2>
+      <div
+        className={`flex flex-wrap gap-2 ${settings.compactMode ? "sm:gap-3" : "sm:gap-4"} items-center ${settings.compactMode ? "mb-2 sm:mb-3" : "mb-3 sm:mb-4"} flex-shrink-0`}
+      >
+        <h2
+          className={`font-bold ${settings.compactMode ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} flex items-center`}
+        >
+          Notes
+        </h2>
 
-        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
+        <div className="mr-auto order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
             type="text"
-            placeholder="Search statuses..."
+            placeholder="Search notes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             variant="ghost"
@@ -77,17 +101,18 @@ export function NotesPanel() {
             openModal("notes")
           }}
           variant="secondary"
+          className="order-2 sm:order-3 ml-auto sm:ml-0"
         >
           <Plus size={20} />
         </Button>
       </div>
       <ul
-        className="space-y-2 relative overflow-auto flex-1 min-h-0 -mr-3 pr-3"
+        className={`${settings.compactMode ? "space-y-1" : "space-y-2"} relative overflow-auto flex-1 min-h-0 -mr-3 pr-3`}
         ref={listRef}
       >
         <AnimatePresence>
-          {filteredNotes.length > 0 ? (
-            filteredNotes.map((note) => <NoteItem note={note} key={note.id} />)
+          {displayedNotes.length > 0 ? (
+            displayedNotes.map((note) => <NoteItem note={note} key={note.id} />)
           ) : notes.length === 0 ? (
             <motion.li
               initial={{ opacity: 0, scale: 0.95 }}
@@ -115,6 +140,25 @@ export function NotesPanel() {
           )}
         </AnimatePresence>
       </ul>
+      {hasMoreItems && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-2 text-sm text-[rgb(var(--primary))] hover:underline cursor-pointer flex-shrink-0"
+        >
+          Show {hiddenCount} more item{hiddenCount > 1 ? "s" : ""}...
+        </button>
+      )}
+      {showAll &&
+        settings.maxItemsPerPanel > 0 &&
+        filteredNotes.length > settings.maxItemsPerPanel &&
+        searchQuery.trim() === "" && (
+          <button
+            onClick={() => setShowAll(false)}
+            className="mt-2 text-sm text-[rgb(var(--muted))] hover:underline cursor-pointer flex-shrink-0"
+          >
+            Show less
+          </button>
+        )}
     </Panel>
   )
 }

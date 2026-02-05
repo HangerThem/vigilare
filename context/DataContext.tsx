@@ -6,8 +6,9 @@ import {
   useContext,
   useState,
   useCallback,
-  ReactNode,
 } from "react"
+import { useConfirmDialog } from "@/context/ConfirmDialogContext"
+import { useSettings } from "./SettingsContext"
 
 export type CommandType = {
   id: string
@@ -79,7 +80,11 @@ const DataContext = createContext<DataContextType | null>(null)
 function useDataManager<T extends { id: string }>(
   storageKey: string,
   initialValue: T[],
+  confirmTitle: string,
+  confirmMessage: string,
 ): DataManager<T> {
+  const { settings } = useSettings()
+  const { confirm } = useConfirmDialog()
   const { value: items, setValue: setItems } = useLocalStorageState<T[]>(
     storageKey,
     initialValue,
@@ -104,9 +109,23 @@ function useDataManager<T extends { id: string }>(
 
   const remove = useCallback(
     (id: string) => {
-      setItems((prev) => prev.filter((item) => item.id !== id))
+      if (settings.confirmBeforeDelete) {
+        confirm(confirmTitle, confirmMessage).then((confirmed) => {
+          if (confirmed) {
+            setItems((prev) => prev.filter((item) => item.id !== id))
+          }
+        })
+      } else {
+        setItems((prev) => prev.filter((item) => item.id !== id))
+      }
     },
-    [setItems],
+    [
+      setItems,
+      confirm,
+      confirmTitle,
+      confirmMessage,
+      settings.confirmBeforeDelete,
+    ],
   )
 
   const getById = useCallback(
@@ -147,11 +166,31 @@ function useDataManager<T extends { id: string }>(
   }
 }
 
-export function DataProvider({ children }: { children: ReactNode }) {
-  const commands = useDataManager<CommandType>("commands", [])
-  const links = useDataManager<LinkType>("links", [])
-  const notes = useDataManager<NoteType>("notes", [])
-  const statuses = useDataManager<StatusType>("status", [])
+export function DataProvider({ children }: { children: React.ReactNode }) {
+  const commands = useDataManager<CommandType>(
+    "commands",
+    [],
+    "Delete Command",
+    "Are you sure you want to delete this command?",
+  )
+  const links = useDataManager<LinkType>(
+    "links",
+    [],
+    "Delete Link",
+    "Are you sure you want to delete this link?",
+  )
+  const notes = useDataManager<NoteType>(
+    "notes",
+    [],
+    "Delete Note",
+    "Are you sure you want to delete this note?",
+  )
+  const statuses = useDataManager<StatusType>(
+    "status",
+    [],
+    "Delete Status",
+    "Are you sure you want to delete this status?",
+  )
 
   return (
     <DataContext.Provider value={{ commands, links, notes, statuses }}>

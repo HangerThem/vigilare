@@ -12,6 +12,7 @@ import { useModal } from "@/context/ModalContext"
 import { Input } from "../ui/Input"
 import CommandFormModal from "../modals/CommandFormModal"
 import CommandItem from "./items/CommandItem"
+import { useSettings } from "@/context/SettingsContext"
 
 export type { CommandType } from "@/context/DataContext"
 
@@ -19,6 +20,7 @@ export function CommandsPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
   const { items: commands, reorder } = useCommands()
+  const { settings } = useSettings()
 
   const { openModal } = useModal()
 
@@ -51,22 +53,44 @@ export function CommandsPanel() {
     if (searchQuery.trim() === "") return commands
     const fuse = new Fuse(commands, {
       keys: ["title", "code", "language"],
-      threshold: 0.3,
+      threshold: settings.fuzzySearchThreshold,
     })
     return fuse.search(searchQuery).map((result) => result.item)
-  }, [commands, searchQuery])
+  }, [commands, searchQuery, settings.fuzzySearchThreshold])
+
+  const [showAll, setShowAll] = useState(false)
+
+  const displayedCommands = useMemo(() => {
+    if (
+      showAll ||
+      settings.maxItemsPerPanel === 0 ||
+      searchQuery.trim() !== ""
+    ) {
+      return filteredCommands
+    }
+    return filteredCommands.slice(0, settings.maxItemsPerPanel)
+  }, [filteredCommands, settings.maxItemsPerPanel, showAll, searchQuery])
+
+  const hasMoreItems = filteredCommands.length > displayedCommands.length
+  const hiddenCount = filteredCommands.length - displayedCommands.length
 
   return (
     <Panel>
       <CommandFormModal />
 
-      <div className="flex items-center gap-4 mb-4 flex-shrink-0">
-        <h2 className="font-bold text-2xl flex items-center">Commands</h2>
+      <div
+        className={`flex flex-wrap items-center gap-2 ${settings.compactMode ? "sm:gap-3" : "sm:gap-4"} ${settings.compactMode ? "mb-2 sm:mb-3" : "mb-3 sm:mb-4"} flex-shrink-0`}
+      >
+        <h2
+          className={`font-bold ${settings.compactMode ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} flex items-center`}
+        >
+          Commands
+        </h2>
 
-        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
+        <div className="mr-auto order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
             type="text"
-            placeholder="Search statuses..."
+            placeholder="Search commands..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             variant="ghost"
@@ -79,17 +103,18 @@ export function CommandsPanel() {
             openModal("commands")
           }}
           variant="secondary"
+          className="order-2 sm:order-3 ml-auto sm:ml-0"
         >
           <Plus size={20} />
         </Button>
       </div>
       <ul
-        className="relative space-y-2 overflow-auto flex-1 min-h-0 -mr-3 pr-3"
+        className={`relative ${settings.compactMode ? "space-y-1" : "space-y-2"} overflow-auto flex-1 min-h-0 -mr-3 pr-3`}
         ref={listRef}
       >
         <AnimatePresence>
-          {filteredCommands.length > 0 ? (
-            filteredCommands.map((command) => (
+          {displayedCommands.length > 0 ? (
+            displayedCommands.map((command) => (
               <CommandItem key={command.id} command={command} />
             ))
           ) : commands.length === 0 ? (
@@ -119,6 +144,25 @@ export function CommandsPanel() {
           )}
         </AnimatePresence>
       </ul>
+      {hasMoreItems && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-2 text-sm text-[rgb(var(--primary))] hover:underline cursor-pointer flex-shrink-0"
+        >
+          Show {hiddenCount} more item{hiddenCount > 1 ? "s" : ""}...
+        </button>
+      )}
+      {showAll &&
+        settings.maxItemsPerPanel > 0 &&
+        filteredCommands.length > settings.maxItemsPerPanel &&
+        searchQuery.trim() === "" && (
+          <button
+            onClick={() => setShowAll(false)}
+            className="mt-2 text-sm text-[rgb(var(--muted))] hover:underline cursor-pointer flex-shrink-0"
+          >
+            Show less
+          </button>
+        )}
     </Panel>
   )
 }

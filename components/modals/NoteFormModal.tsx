@@ -61,12 +61,12 @@ export default function NoteFormModal() {
 
   return (
     <Modal name="notes">
-      <h2 className="font-bold text-2xl mb-4">
+      <h2 className="font-bold text-xl sm:text-2xl mb-3 sm:mb-4">
         {editingId ? "Edit Note" : "Add Note"}
       </h2>
       <form
         onSubmit={handleSubmit(editingId ? handleEditNote : handleAddNote)}
-        className="flex flex-col gap-2 p-2 w-120"
+        className="flex flex-col gap-2 sm:gap-3 w-full sm:w-96 md:w-120"
       >
         <Controller
           name="category"

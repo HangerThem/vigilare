@@ -7,8 +7,9 @@ import {
   useState,
   useCallback,
   useEffect,
-  ReactNode,
 } from "react"
+import { useSettings } from "./SettingsContext"
+import { useLocalStorageState } from "@/hook/useLocalStorageState"
 
 export type Theme = "light" | "dark" | "system"
 
@@ -17,7 +18,7 @@ type ThemeContextType = {
   resolvedTheme: "light" | "dark"
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
-  getIcon: (theme: Theme) => ReactNode
+  getIcon: (theme: Theme, size?: number) => React.ReactNode
   getTitle: (theme: Theme) => string
   themeOptions: Theme[]
 }
@@ -31,11 +32,6 @@ function getSystemTheme(): "light" | "dark" {
     : "light"
 }
 
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "system"
-  return (localStorage.getItem("theme") as Theme) || "system"
-}
-
 function disableTransitionsTemporarily() {
   const root = document.documentElement
   root.classList.add("disable-transitions")
@@ -47,29 +43,36 @@ function disableTransitionsTemporarily() {
   }, 50)
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const { value: theme, setValue: setThemeState } = useLocalStorageState<Theme>(
+    "theme",
+    "system",
+  )
   const [themeOptions] = useState<Theme[]>(["light", "dark", "system"])
+  const { settings } = useSettings()
 
   const resolvedTheme = theme === "system" ? getSystemTheme() : theme
 
   useEffect(() => {
     const root = document.documentElement
 
-    disableTransitionsTemporarily()
+    if (!settings.showAnimations) disableTransitionsTemporarily()
 
     root.classList.remove("light", "dark")
     root.classList.add(resolvedTheme)
 
-    localStorage.setItem("theme", theme)
-  }, [theme, resolvedTheme])
+    setThemeState((prev) => {
+      if (prev === "system") return "system"
+      return resolvedTheme
+    })
+  }, [theme, resolvedTheme, settings.showAnimations, setThemeState])
 
   useEffect(() => {
     if (theme !== "system") return
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
     const handler = () => {
-      disableTransitionsTemporarily()
+      if (!settings.showAnimations) disableTransitionsTemporarily()
 
       const resolved = getSystemTheme()
       document.documentElement.classList.remove("light", "dark")
@@ -78,11 +81,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     mediaQuery.addEventListener("change", handler)
     return () => mediaQuery.removeEventListener("change", handler)
-  }, [theme])
+  }, [theme, settings.showAnimations])
 
-  const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme)
-  }, [])
+  const setTheme = useCallback(
+    (newTheme: Theme) => {
+      setThemeState(newTheme)
+    },
+    [setThemeState],
+  )
 
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
@@ -90,16 +96,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (prev === "dark") return "system"
       return "light"
     })
-  }, [])
+  }, [setThemeState])
 
-  const getIcon = (theme: Theme) => {
+  const getIcon = (theme: Theme, size: number = 20) => {
     switch (theme) {
       case "light":
-        return <Sun size={20} />
+        return <Sun size={size} />
       case "dark":
-        return <Moon size={20} />
+        return <Moon size={size} />
       case "system":
-        return <Monitor size={20} />
+        return <Monitor size={size} />
     }
   }
 

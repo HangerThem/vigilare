@@ -16,6 +16,7 @@ import { Select } from "../ui/Select"
 import { Input } from "../ui/Input"
 import { useOnline } from "@/hook/useOnline"
 import StatusItem from "./items/StatusItem"
+import { useSettings } from "@/context/SettingsContext"
 
 export type { StatusState, StatusType } from "@/context/DataContext"
 
@@ -32,6 +33,7 @@ export function StatusPanel() {
   const { openModal } = useModal()
   const [searchQuery, setSearchQuery] = useState<string>("")
   const isOnline = useOnline()
+  const { settings } = useSettings()
 
   const handleStatusUpdateFromSW = useCallback(
     (updatedStatuses: StatusType[]) => {
@@ -109,25 +111,97 @@ export function StatusPanel() {
   const filteredStatuses = useMemo(() => {
     if (searchQuery.trim() === "") return statuses
     const fuse = new Fuse(statuses, {
-      keys: ["name", "url", "option"],
-      threshold: 0.3,
+      keys: ["title", "url", "option"],
+      threshold: settings.fuzzySearchThreshold,
     })
     return fuse.search(searchQuery).map((result) => result.item)
-  }, [statuses, searchQuery])
+  }, [statuses, searchQuery, settings.fuzzySearchThreshold])
+
+  const [showAll, setShowAll] = useState(false)
+
+  const displayedStatuses = useMemo(() => {
+    if (
+      showAll ||
+      settings.maxItemsPerPanel === 0 ||
+      searchQuery.trim() !== ""
+    ) {
+      return filteredStatuses
+    }
+    return filteredStatuses.slice(0, settings.maxItemsPerPanel)
+  }, [filteredStatuses, settings.maxItemsPerPanel, showAll, searchQuery])
+
+  const hasMoreItems = filteredStatuses.length > displayedStatuses.length
+  const hiddenCount = filteredStatuses.length - displayedStatuses.length
 
   return (
     <Panel>
       <StatusFormModal />
 
-      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+      <div
+        className={`flex flex-wrap items-center gap-2 ${settings.compactMode ? "mb-2 sm:mb-3" : "mb-3 sm:mb-4"} flex-shrink-0`}
+      >
         <div className="flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}
-          />
-          <h2 className="font-bold text-2xl">Status</h2>
+          {settings.showOfflineIndicator && (
+            <div
+              className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}
+            />
+          )}
+          <h2
+            className={`font-bold ${settings.compactMode ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}
+          >
+            Statuses
+          </h2>
         </div>
 
-        <div className="flex w-56 items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors mr-auto">
+        <div className="flex items-center gap-2 ml-auto order-2 sm:order-3">
+          {isSupported && (
+            <div className="hidden sm:flex items-center gap-2">
+              <Select
+                options={[
+                  { value: 5000, label: "5 secs" },
+                  { value: 30000, label: "30 secs" },
+                  { value: 60000, label: "1 mins" },
+                  { value: 900000, label: "15 mins" },
+                  { value: 3600000, label: "60 mins" },
+                ]}
+                value={checkInterval}
+                onChange={(value) => setCheckInterval(Number(value))}
+                className="w-28 sm:w-32"
+              />
+              <Button
+                onClick={toggleNotifications}
+                className={
+                  notificationsEnabled
+                    ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
+                    : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
+                }
+                variant="secondary"
+                title={
+                  notificationsEnabled
+                    ? "Notifications enabled - Click to disable"
+                    : "Enable notifications for status changes"
+                }
+              >
+                {notificationsEnabled ? (
+                  <Bell size={20} />
+                ) : (
+                  <BellOff size={20} />
+                )}
+              </Button>
+            </div>
+          )}
+          <Button
+            onClick={() => {
+              setEditingId(null)
+              openModal("status")
+            }}
+            variant="secondary"
+          >
+            <Plus size={20} />
+          </Button>
+        </div>
+
+        <div className="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
             type="text"
             placeholder="Search statuses..."
@@ -139,7 +213,7 @@ export function StatusPanel() {
         </div>
 
         {isSupported && (
-          <div className="flex items-center gap-2">
+          <div className="flex sm:hidden items-center gap-2 order-4 w-full justify-between">
             <Select
               options={[
                 { value: 5000, label: "5 secs" },
@@ -150,7 +224,7 @@ export function StatusPanel() {
               ]}
               value={checkInterval}
               onChange={(value) => setCheckInterval(Number(value))}
-              className="w-32"
+              className="flex-1"
             />
             <Button
               onClick={toggleNotifications}
@@ -174,24 +248,15 @@ export function StatusPanel() {
             </Button>
           </div>
         )}
-        <Button
-          onClick={() => {
-            setEditingId(null)
-            openModal("status")
-          }}
-          variant="secondary"
-        >
-          <Plus size={20} />
-        </Button>
       </div>
       <div className="flex-1 relative">
         <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-2 overflow-auto min-h-0 -mr-3 pr-3"
+          className={`grid grid-cols-1 md:grid-cols-2 ${settings.compactMode ? "gap-1" : "gap-2"} overflow-auto min-h-0 -mr-3 pr-3`}
           ref={listRef}
         >
           <AnimatePresence>
-            {filteredStatuses.length > 0 ? (
-              filteredStatuses.map((status) => (
+            {displayedStatuses.length > 0 ? (
+              displayedStatuses.map((status) => (
                 <StatusItem
                   status={status}
                   key={status.id}
@@ -223,6 +288,25 @@ export function StatusPanel() {
             )}
           </AnimatePresence>
         </div>
+        {hasMoreItems && (
+          <button
+            onClick={() => setShowAll(true)}
+            className="mt-2 text-sm text-[rgb(var(--primary))] hover:underline cursor-pointer flex-shrink-0"
+          >
+            Show {hiddenCount} more item{hiddenCount > 1 ? "s" : ""}...
+          </button>
+        )}
+        {showAll &&
+          settings.maxItemsPerPanel > 0 &&
+          filteredStatuses.length > settings.maxItemsPerPanel &&
+          searchQuery.trim() === "" && (
+            <button
+              onClick={() => setShowAll(false)}
+              className="mt-2 text-sm text-[rgb(var(--muted))] hover:underline cursor-pointer flex-shrink-0"
+            >
+              Show less
+            </button>
+          )}
       </div>
     </Panel>
   )
