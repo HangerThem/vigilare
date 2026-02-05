@@ -1,10 +1,27 @@
-import type { Metadata } from "next"
-import "./globals.css"
+import type { Metadata, Viewport } from "next"
 import { Providers } from "./providers"
+import "./globals.css"
 
 export const metadata: Metadata = {
   title: "Vigilare",
-  description: "Your personal dashboard",
+  description: "A customizable dashboard for your daily needs",
+  keywords: [
+    "dashboard",
+    "notes",
+    "links",
+    "commands",
+    "productivity",
+    "customizable",
+  ],
+  authors: [{ name: "HangerThem", url: "https://hangerthem.com" }],
+  creator: "HangerThem",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "rgb(var(--background))",
 }
 
 export default function RootLayout({

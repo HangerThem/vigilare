@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion"
 import Modal from "./Modal"
 import Fuse from "fuse.js"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 
 interface CommandBase {
   icon?: React.ReactNode
@@ -34,6 +34,7 @@ export default function CommandModal({
   commands,
 }: CommandModalProps) {
   const [query, setQuery] = useState("")
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const [commandsState, setCommandsState] = useState<Command[]>(commands)
 
   const results = useMemo(() => {
@@ -49,27 +50,66 @@ export default function CommandModal({
     return fuse.search(query).map((result) => result.item)
   }, [query, commandsState, commands])
 
-  const handleCommandActionSelect = (command: {
-    name: string
-    action: () => void
-  }) => {
-    command.action()
+  const handleClose = useCallback(() => {
     onClose()
-  }
+    setCommandsState(commands)
+    setQuery("")
+  }, [onClose, commands])
 
-  const handleCommandsUpdate = (newCommands: Command[]) => {
+  const handleCommandActionSelect = useCallback(
+    (command: { name: string; action: () => void }) => {
+      command.action()
+      handleClose()
+    },
+    [handleClose],
+  )
+
+  const handleCommandsUpdate = useCallback((newCommands: Command[]) => {
     setCommandsState(newCommands)
-  }
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        setSelectedIndex((prev) =>
+          prev < results.length - 1 ? prev + 1 : prev,
+        )
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev))
+      } else if (e.key === "Enter") {
+        e.preventDefault()
+        const command = results[selectedIndex]
+        if (command) {
+          if (command.type === "commands") {
+            handleCommandsUpdate(command.commands)
+            setSelectedIndex(0)
+          } else {
+            handleCommandActionSelect(command)
+          }
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault()
+        handleClose()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [
+    isOpen,
+    selectedIndex,
+    results,
+    handleClose,
+    handleCommandActionSelect,
+    handleCommandsUpdate,
+  ])
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={() => {
-        onClose()
-        setCommandsState(commands)
-        setQuery("")
-      }}
-    >
+    <Modal isOpen={isOpen} onClose={handleClose}>
       <div className="w-96">
         <input
           type="text"
@@ -80,40 +120,24 @@ export default function CommandModal({
           autoFocus
         />
         <ul>
-          <AnimatePresence>
-            {results.map((command, index) =>
-              command.type === "commands" ? (
-                <motion.li
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  key={index}
-                  onClick={() => handleCommandsUpdate(command.commands)}
-                  className="p-2 flex items-center gap-2 cursor-pointer hover:bg-[rgb(var(--card-hover))] rounded transition-colors"
-                >
-                  {command.icon && <span>{command.icon}</span>}
-                  {command.name}
-                </motion.li>
-              ) : (
-                <motion.li
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  key={index}
-                  onClick={() => handleCommandActionSelect(command)}
-                  className="p-2 flex items-center gap-2 cursor-pointer hover:bg-[rgb(var(--card-hover))] rounded transition-colors"
-                >
-                  {command.icon && <span>{command.icon}</span>}
-                  {command.name}
-                </motion.li>
-              ),
-            )}
-            {results.length === 0 && (
-              <li className="p-2 text-[rgb(var(--muted))]">
-                No commands found.
-              </li>
-            )}
-          </AnimatePresence>
+          {results.map((command, index) => (
+            <li
+              key={index}
+              onClick={() =>
+                command.type === "commands"
+                  ? handleCommandsUpdate(command.commands)
+                  : handleCommandActionSelect(command)
+              }
+              onMouseEnter={() => setSelectedIndex(index)}
+              className={`p-2 flex items-center gap-2 cursor-pointer rounded transition-colors ${selectedIndex === index ? "bg-[rgb(var(--card-hover))]" : ""}`}
+            >
+              {command.icon && <span>{command.icon}</span>}
+              {command.name}
+            </li>
+          ))}
+          {results.length === 0 && (
+            <li className="p-2 text-[rgb(var(--muted))]">No commands found.</li>
+          )}
         </ul>
       </div>
     </Modal>

@@ -22,7 +22,7 @@ import { downloadAppData, importAllAppData } from "@/utils/appData"
 import { useTheme } from "@/context/ThemeContext"
 
 export default function Home() {
-  const { toggleTheme, getIcon, themeOptions } = useTheme()
+  const { setTheme, getIcon, themeOptions } = useTheme()
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const [commandModalOpen, setCommandModalOpen] = useState(false)
   const [commands] = useState<Command[]>([
@@ -94,7 +94,7 @@ export default function Home() {
         icon: getIcon(themeOption),
         name: themeOption.charAt(0).toUpperCase() + themeOption.slice(1),
         action: () => {
-          toggleTheme()
+          setTheme(themeOption)
         },
       })),
     },
