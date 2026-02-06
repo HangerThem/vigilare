@@ -85,14 +85,14 @@ export default function NoteFormModal() {
           name="title"
           control={control}
           defaultValue=""
-          render={({ field }) => <Input placeholder="Title" {...field} />}
+          render={({ field }) => <Input {...field} placeholder="Title" />}
         />
         <Controller
           name="content"
           control={control}
           defaultValue=""
           render={({ field }) => (
-            <Textarea placeholder="Content" autoresize rows={4} {...field} />
+            <Textarea {...field} placeholder="Content" autoresize rows={4} />
           )}
         />
         <div className="flex justify-end gap-2">

@@ -80,20 +80,13 @@ export default function LinkFormModal() {
           defaultValue={LinkCategory.OTHER}
           rules={{ required: true }}
           render={({ field }) => (
-            <>
-              <Select
-                value={field.value}
-                clearable
-                placeholder="Category"
-                onChange={field.onChange}
-                options={categoryOptions}
-              />
-              {errors.category && (
-                <span className="text-red-500 text-xs">
-                  Category is required
-                </span>
-              )}
-            </>
+            <Select
+              value={field.value}
+              clearable
+              placeholder="Category"
+              onChange={field.onChange}
+              options={categoryOptions}
+            />
           )}
         />
         <Controller
@@ -101,18 +94,7 @@ export default function LinkFormModal() {
           control={control}
           rules={{ required: true }}
           render={({ field }) => (
-            <>
-              <Input
-                value={field.value || ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                autoFocus
-                placeholder="Title"
-              />
-              {errors.title && (
-                <span className="text-red-500 text-xs">Title is required</span>
-              )}
-            </>
+            <Input {...field} autoFocus placeholder="Title" />
           )}
         />
         <Controller
@@ -120,18 +102,7 @@ export default function LinkFormModal() {
           control={control}
           rules={{ required: true }}
           render={({ field }) => (
-            <>
-              <Input
-                value={field.value || ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                type="url"
-                placeholder="URL"
-              />
-              {errors.url && (
-                <span className="text-red-500 text-xs">URL is required</span>
-              )}
-            </>
+            <Input {...field} type="url" placeholder="URL" />
           )}
         />
         <div className="flex justify-end gap-2">

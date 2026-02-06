@@ -86,13 +86,7 @@ export default function CommandFormModal() {
           control={control}
           rules={{ required: true }}
           render={({ field }) => (
-            <Input
-              value={field.value || ""}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="Title"
-              autoFocus
-            />
+            <Input {...field} placeholder="Title" autoFocus />
           )}
         />
         <Controller
@@ -100,14 +94,7 @@ export default function CommandFormModal() {
           control={control}
           rules={{ required: true }}
           render={({ field }) => (
-            <Textarea
-              value={field.value || ""}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="Code"
-              autoresize
-              rows={4}
-            />
+            <Textarea {...field} placeholder="Code" autoresize rows={4} />
           )}
         />
         <div className="flex justify-end gap-2">

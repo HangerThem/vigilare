@@ -120,19 +120,19 @@ export default function StatusFormModal() {
           )}
         />
         <Controller
-          name="url"
-          control={control}
-          defaultValue=""
-          render={({ field }) => (
-            <Input placeholder="Title" autoFocus {...field} />
-          )}
-        />
-        <Controller
           name="title"
           control={control}
           defaultValue=""
           render={({ field }) => (
-            <Input type="url" placeholder="URL" {...field} />
+            <Input {...field} placeholder="Title" autoFocus />
+          )}
+        />
+        <Controller
+          name="url"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <Input {...field} type="url" placeholder="URL" />
           )}
         />
         <div className="flex justify-end gap-2">
