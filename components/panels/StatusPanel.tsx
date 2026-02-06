@@ -49,6 +49,7 @@ export function StatusPanel() {
     checkInterval,
     setCheckInterval,
     startMonitoring,
+    updateStatuses,
     stopMonitoring,
     enableNotifications,
     disableNotifications,
@@ -68,9 +69,9 @@ export function StatusPanel() {
 
   useEffect(() => {
     if (isMonitoring && statuses.length > 0) {
-      startMonitoring(statuses)
+      updateStatuses(statuses)
     }
-  }, [statuses]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [statuses, isMonitoring, updateStatuses])
 
   const handleSortEnd = useCallback(
     (evt: SortableJS.SortableEvent) => {

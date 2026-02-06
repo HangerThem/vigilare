@@ -22,6 +22,7 @@ export interface UseNotificationsReturn {
   setCheckInterval: (interval: number) => void
   requestPermission: () => Promise<boolean>
   startMonitoring: (statuses: StatusType[]) => void
+  updateStatuses: (statuses: StatusType[]) => void
   stopMonitoring: () => void
   enableNotifications: () => Promise<boolean>
   disableNotifications: () => void
@@ -239,15 +240,23 @@ export function useNotifications(
   const startMonitoring = useCallback(
     (statuses: StatusType[]) => {
       statusesRef.current = statuses
-      setIsMonitoring(true)
-      localStorage.setItem("statusMonitoring", "true")
 
-      performCheck()
-
-      console.log(`Started monitoring with ${checkInterval}ms interval`)
+      // Only perform initial check if not already monitoring
+      const wasMonitoring = isMonitoring
+      if (!wasMonitoring) {
+        setIsMonitoring(true)
+        localStorage.setItem("statusMonitoring", "true")
+        performCheck()
+        console.log(`Started monitoring with ${checkInterval}ms interval`)
+      }
     },
-    [checkInterval, performCheck],
+    [checkInterval, performCheck, isMonitoring],
   )
+
+  // Separate function to update statuses without triggering a check
+  const updateStatuses = useCallback((statuses: StatusType[]) => {
+    statusesRef.current = statuses
+  }, [])
 
   const stopMonitoring = useCallback(() => {
     if (intervalRef.current) {
@@ -269,6 +278,7 @@ export function useNotifications(
     setCheckInterval,
     requestPermission,
     startMonitoring,
+    updateStatuses,
     stopMonitoring,
     enableNotifications,
     disableNotifications,
