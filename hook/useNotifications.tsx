@@ -1,6 +1,12 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from "react"
 import { useLocalStorageState } from "./useLocalStorageState"
 import { StatusType } from "@/context/DataContext"
 import { useOnline } from "./useOnline"
@@ -23,16 +29,16 @@ export interface UseNotificationsReturn {
 
 const DEFAULT_CHECK_INTERVAL = 15000
 
-function getInitialSupport() {
-  if (typeof window === "undefined") return false
-  return "Notification" in window && "serviceWorker" in navigator
-}
-
-function getInitialPermission(): NotificationPermission {
-  if (typeof window === "undefined") return "default"
-  if (!("Notification" in window)) return "default"
-  return Notification.permission as NotificationPermission
-}
+// Helper functions for useSyncExternalStore
+const emptySubscribe = () => () => {}
+const getIsSupported = () =>
+  "Notification" in window && "serviceWorker" in navigator
+const getServerIsSupported = () => false
+const getPermission = (): NotificationPermission =>
+  "Notification" in window
+    ? (Notification.permission as NotificationPermission)
+    : "default"
+const getServerPermission = (): NotificationPermission => "default"
 
 async function checkStatus(status: StatusType): Promise<"up" | "down"> {
   try {
@@ -57,9 +63,18 @@ export function useNotifications(
   onStatusUpdate?: (statuses: StatusType[]) => void,
 ): UseNotificationsReturn {
   const isOnline = useOnline()
-  const [permission, setPermission] =
-    useState<NotificationPermission>(getInitialPermission)
-  const [isSupported] = useState(getInitialSupport)
+
+  const isSupported = useSyncExternalStore(
+    emptySubscribe,
+    getIsSupported,
+    getServerIsSupported,
+  )
+  const permission = useSyncExternalStore(
+    emptySubscribe,
+    getPermission,
+    getServerPermission,
+  )
+
   const [isMonitoring, setIsMonitoring] = useState(false)
   const { value: notificationsEnabled, setValue: setNotificationsEnabled } =
     useLocalStorageState<boolean>("notificationsEnabled", false)
@@ -199,7 +214,6 @@ export function useNotifications(
 
     try {
       const result = await Notification.requestPermission()
-      setPermission(result as NotificationPermission)
       return result === "granted"
     } catch (error) {
       console.error("Error requesting notification permission:", error)
