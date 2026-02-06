@@ -30,7 +30,6 @@ export interface UseNotificationsReturn {
 
 const DEFAULT_CHECK_INTERVAL = 15000
 
-// Helper functions for useSyncExternalStore
 const emptySubscribe = () => () => {}
 const getIsSupported = () =>
   "Notification" in window && "serviceWorker" in navigator
@@ -46,15 +45,18 @@ async function checkStatus(status: StatusType): Promise<"up" | "down"> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-    await fetch(status.url, {
+    const res = await fetch(status.url, {
       method: "HEAD",
       signal: controller.signal,
       cache: "no-store",
-      mode: "no-cors",
     })
 
-    clearTimeout(timeoutId)
-    return "up"
+    if (res.ok) {
+      clearTimeout(timeoutId)
+      return "up"
+    }
+
+    return "down"
   } catch {
     return "down"
   }
@@ -105,6 +107,7 @@ export function useNotifications(
           scope: "/",
         })
         swRegistration.current = registration
+        console.log("Service Worker registered with scope:", registration)
         console.log("Service Worker registered for notifications")
       } catch (error) {
         console.error("Service Worker registration failed:", error)
@@ -241,7 +244,6 @@ export function useNotifications(
     (statuses: StatusType[]) => {
       statusesRef.current = statuses
 
-      // Only perform initial check if not already monitoring
       const wasMonitoring = isMonitoring
       if (!wasMonitoring) {
         setIsMonitoring(true)
@@ -253,7 +255,6 @@ export function useNotifications(
     [checkInterval, performCheck, isMonitoring],
   )
 
-  // Separate function to update statuses without triggering a check
   const updateStatuses = useCallback((statuses: StatusType[]) => {
     statusesRef.current = statuses
   }, [])

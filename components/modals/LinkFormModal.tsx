@@ -22,12 +22,7 @@ export default function LinkFormModal() {
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("links")
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<LinkFormData>()
+  const { control, handleSubmit, reset } = useForm<LinkFormData>()
 
   const handleAddLink = (data: LinkFormData) => {
     const { category, url, title } = data

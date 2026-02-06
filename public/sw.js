@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 const CACHE_NAME = "vigilare-v1"
-const STATIC_ASSETS = ["/", "/manifest.json"]
+const STATIC_ASSETS = ["/", "manifest.webmanifest"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
