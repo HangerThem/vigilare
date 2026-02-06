@@ -24,6 +24,10 @@ export function notifyAllStorageListeners() {
 }
 
 export function useLocalStorageState<T>(key: string, initialValue: T) {
+  // Serialize initialValue once to use as stable fallback string
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialValueSerialized = useMemo(() => JSON.stringify(initialValue), [])
+
   const subscribe = useCallback(
     (callback: () => void) => {
       // Add to global listeners for same-window updates
@@ -55,19 +59,19 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
 
   const getSnapshot = useCallback(() => {
     if (typeof window === "undefined") {
-      return JSON.stringify(initialValue)
+      return initialValueSerialized
     }
     try {
       const item = localStorage.getItem(key)
-      return item ?? JSON.stringify(initialValue)
+      return item ?? initialValueSerialized
     } catch {
-      return JSON.stringify(initialValue)
+      return initialValueSerialized
     }
-  }, [key, initialValue])
+  }, [key, initialValueSerialized])
 
   const getServerSnapshot = useCallback(
-    () => JSON.stringify(initialValue),
-    [initialValue],
+    () => initialValueSerialized,
+    [initialValueSerialized],
   )
 
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
@@ -76,9 +80,9 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     try {
       return JSON.parse(raw) as T
     } catch {
-      return initialValue
+      return JSON.parse(initialValueSerialized) as T
     }
-  }, [raw, initialValue])
+  }, [raw, initialValueSerialized])
 
   const notify = useCallback(() => {
     notifyListeners(key)
@@ -91,10 +95,10 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
       const prev = (() => {
         try {
           return JSON.parse(
-            localStorage.getItem(key) ?? JSON.stringify(initialValue),
+            localStorage.getItem(key) ?? initialValueSerialized,
           ) as T
         } catch {
-          return initialValue
+          return JSON.parse(initialValueSerialized) as T
         }
       })()
 
@@ -110,7 +114,7 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
         console.error("Failed to save to localStorage:", error)
       }
     },
-    [key, initialValue, notify],
+    [key, notify, initialValueSerialized],
   )
 
   const exportValue = useCallback(() => {

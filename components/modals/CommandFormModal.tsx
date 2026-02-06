@@ -13,7 +13,7 @@ import { Select } from "../ui/Select"
 type CommandFormData = Omit<CommandType, "id">
 
 export default function CommandFormModal() {
-  const { add, update, editingId, setEditingId, getEditing } = useCommands()
+  const { add, update, editingId, setEditingId, editingItem } = useCommands()
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("commands")
 
@@ -41,17 +41,16 @@ export default function CommandFormModal() {
       return
     }
 
-    const editing = getEditing()
-    if (editing) {
+    if (editingItem) {
       reset({
-        language: editing.language,
-        title: editing.title,
-        code: editing.code,
+        language: editingItem.language,
+        title: editingItem.title,
+        code: editingItem.code,
       })
     } else {
       reset({ language: "", title: "", code: "" })
     }
-  }, [isOpen, editingId, reset, setEditingId, getEditing])
+  }, [isOpen, editingItem, reset, setEditingId])
 
   return (
     <Modal name="commands">

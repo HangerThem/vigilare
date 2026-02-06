@@ -12,7 +12,7 @@ import { Select } from "../ui/Select"
 type NoteFormData = Omit<NoteType, "id">
 
 export default function NoteFormModal() {
-  const { add, update, editingId, setEditingId, getEditing } = useNotes()
+  const { add, update, editingId, setEditingId, editingItem } = useNotes()
   const [categoryOptions] = useState(
     Object.values(NoteCategory).map((cat) => ({
       value: cat,
@@ -47,17 +47,16 @@ export default function NoteFormModal() {
       return
     }
 
-    const editing = getEditing()
-    if (editing) {
+    if (editingItem) {
       reset({
-        category: editing.category,
-        title: editing.title,
-        content: editing.content,
+        category: editingItem.category,
+        title: editingItem.title,
+        content: editingItem.content,
       })
     } else {
       reset({ category: NoteCategory.OTHER, title: "", content: "" })
     }
-  }, [isOpen, editingId, reset, setEditingId, getEditing])
+  }, [isOpen, editingItem, reset, setEditingId])
 
   return (
     <Modal name="notes">

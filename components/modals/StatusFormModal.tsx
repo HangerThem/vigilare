@@ -25,7 +25,7 @@ export default function StatusFormModal() {
     update,
     editingId,
     setEditingId,
-    getEditing,
+    editingItem,
     setItems: setStatuses,
   } = useStatuses()
   const { closeModal, isModalOpen } = useModal()
@@ -81,17 +81,16 @@ export default function StatusFormModal() {
       return
     }
 
-    const editing = getEditing()
-    if (editing) {
+    if (editingItem) {
       reset({
-        url: editing.url,
-        title: editing.title,
-        option: editing.option,
+        url: editingItem.url,
+        title: editingItem.title,
+        option: editingItem.option,
       })
     } else {
       reset({ url: "", title: "", option: undefined })
     }
-  }, [isOpen, editingId, reset, setEditingId, getEditing])
+  }, [isOpen, editingItem, reset, setEditingId])
 
   return (
     <Modal name="status">

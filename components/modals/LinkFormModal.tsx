@@ -11,7 +11,7 @@ import { Select } from "../ui/Select"
 type LinkFormData = Omit<LinkType, "id">
 
 export default function LinkFormModal() {
-  const { add, update, editingId, setEditingId, getEditing } = useLinks()
+  const { add, update, editingId, setEditingId, editingItem } = useLinks()
   const [categoryOptions] = useState(
     Object.values(LinkCategory).map((cat) => ({
       value: cat,
@@ -46,17 +46,16 @@ export default function LinkFormModal() {
       return
     }
 
-    const editing = getEditing()
-    if (editing) {
+    if (editingItem) {
       reset({
-        category: editing.category,
-        url: editing.url,
-        title: editing.title,
+        category: editingItem.category,
+        url: editingItem.url,
+        title: editingItem.title,
       })
     } else {
       reset({ category: LinkCategory.OTHER, url: "", title: "" })
     }
-  }, [isOpen, editingId, reset, setEditingId, getEditing])
+  }, [isOpen, editingItem, reset, setEditingId])
 
   return (
     <Modal name="links">

@@ -1,12 +1,7 @@
 "use client"
 
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-} from "react"
+import { createContext, useContext, useState, useCallback } from "react"
 import { useConfirmDialog } from "@/context/ConfirmDialogContext"
 import { useSettings } from "./SettingsContext"
 
@@ -64,7 +59,7 @@ interface DataManager<T extends { id: string }> {
   getById: (id: string) => T | undefined
   editingId: string | null
   setEditingId: (id: string | null) => void
-  getEditing: () => T | undefined
+  editingItem: T | undefined
   reorder: (oldIndex: number, newIndex: number) => void
 }
 
@@ -135,10 +130,11 @@ function useDataManager<T extends { id: string }>(
     [items],
   )
 
-  const getEditing = useCallback(() => {
-    if (!editingId) return undefined
-    return items.find((item) => item.id === editingId)
-  }, [items, editingId])
+  // Compute editing item directly instead of using a function
+  // This ensures the value is always in sync with items and editingId
+  const editingItem = editingId
+    ? items.find((item) => item.id === editingId)
+    : undefined
 
   const reorder = useCallback(
     (oldIndex: number, newIndex: number) => {
@@ -161,7 +157,7 @@ function useDataManager<T extends { id: string }>(
     getById,
     editingId,
     setEditingId,
-    getEditing,
+    editingItem,
     reorder,
   }
 }
