@@ -31,7 +31,7 @@ export default function StatusFormModal() {
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("status")
 
-  const { register, control, handleSubmit, reset } = useForm<StatusFormData>()
+  const { control, handleSubmit, reset } = useForm<StatusFormData>()
 
   const handleAddStatus = async (data: StatusFormData) => {
     const { url, title, option } = data
@@ -119,15 +119,21 @@ export default function StatusFormModal() {
             />
           )}
         />
-        <Input
-          {...register("title", { required: true })}
-          placeholder="Title"
-          autoFocus
+        <Controller
+          name="url"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <Input placeholder="Title" autoFocus {...field} />
+          )}
         />
-        <Input
-          {...register("url", { required: true })}
-          type="url"
-          placeholder="URL"
+        <Controller
+          name="title"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <Input type="url" placeholder="URL" {...field} />
+          )}
         />
         <div className="flex justify-end gap-2">
           <Button

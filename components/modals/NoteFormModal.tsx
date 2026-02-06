@@ -23,7 +23,7 @@ export default function NoteFormModal() {
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("notes")
 
-  const { register, control, handleSubmit, reset } = useForm<NoteFormData>()
+  const { control, handleSubmit, reset } = useForm<NoteFormData>()
 
   const handleAddNote = (data: NoteFormData) => {
     const { category, title, content } = data
@@ -81,16 +81,19 @@ export default function NoteFormModal() {
             />
           )}
         />
-        <Input
-          {...register("title", { required: true })}
-          placeholder="Title"
-          autoFocus
+        <Controller
+          name="title"
+          control={control}
+          defaultValue=""
+          render={({ field }) => <Input placeholder="Title" {...field} />}
         />
-        <Textarea
-          {...register("content", { required: true })}
-          placeholder="Content"
-          autoresize
-          rows={4}
+        <Controller
+          name="content"
+          control={control}
+          defaultValue=""
+          render={({ field }) => (
+            <Textarea placeholder="Content" autoresize rows={4} {...field} />
+          )}
         />
         <div className="flex justify-end gap-2">
           <Button

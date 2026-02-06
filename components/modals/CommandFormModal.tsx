@@ -17,7 +17,7 @@ export default function CommandFormModal() {
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("commands")
 
-  const { register, control, handleSubmit, reset } = useForm<CommandFormData>()
+  const { control, handleSubmit, reset } = useForm<CommandFormData>()
 
   const handleAddCommand = (data: CommandFormData) => {
     const { language, code, title } = data
@@ -81,18 +81,34 @@ export default function CommandFormModal() {
             />
           )}
         />
-        <Input
-          {...register("title", { required: true })}
-          placeholder="Title"
-          autoFocus
+        <Controller
+          name="title"
+          control={control}
+          rules={{ required: true }}
+          render={({ field }) => (
+            <Input
+              value={field.value || ""}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              placeholder="Title"
+              autoFocus
+            />
+          )}
         />
-        <Textarea
-          {...register("code", {
-            required: true,
-          })}
-          placeholder="Code"
-          autoresize
-          rows={4}
+        <Controller
+          name="code"
+          control={control}
+          rules={{ required: true }}
+          render={({ field }) => (
+            <Textarea
+              value={field.value || ""}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              placeholder="Code"
+              autoresize
+              rows={4}
+            />
+          )}
         />
         <div className="flex justify-end gap-2">
           <Button

@@ -22,7 +22,12 @@ export default function LinkFormModal() {
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("links")
 
-  const { register, control, handleSubmit, reset } = useForm<LinkFormData>()
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<LinkFormData>()
 
   const handleAddLink = (data: LinkFormData) => {
     const { category, url, title } = data
@@ -63,36 +68,71 @@ export default function LinkFormModal() {
         {editingId ? "Edit Link" : "Add Link"}
       </h2>
       <form
-        onSubmit={handleSubmit(editingId ? handleEditLink : handleAddLink)}
+        onSubmit={handleSubmit(
+          editingId ? handleEditLink : handleAddLink,
+          (errors) => console.error("Form validation errors:", errors),
+        )}
         className="flex flex-col gap-2 sm:gap-3 w-full sm:w-96 md:w-120"
       >
         <Controller
           name="category"
           control={control}
-          defaultValue={"" as LinkCategory}
+          defaultValue={LinkCategory.OTHER}
+          rules={{ required: true }}
           render={({ field }) => (
-            <Select
-              value={field.value}
-              clearable
-              placeholder="Category"
-              onChange={field.onChange}
-              options={categoryOptions}
-            />
+            <>
+              <Select
+                value={field.value}
+                clearable
+                placeholder="Category"
+                onChange={field.onChange}
+                options={categoryOptions}
+              />
+              {errors.category && (
+                <span className="text-red-500 text-xs">
+                  Category is required
+                </span>
+              )}
+            </>
           )}
         />
-        <Input
-          {...register("title", {
-            required: true,
-          })}
-          autoFocus
-          placeholder="Title"
+        <Controller
+          name="title"
+          control={control}
+          rules={{ required: true }}
+          render={({ field }) => (
+            <>
+              <Input
+                value={field.value || ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                autoFocus
+                placeholder="Title"
+              />
+              {errors.title && (
+                <span className="text-red-500 text-xs">Title is required</span>
+              )}
+            </>
+          )}
         />
-        <Input
-          {...register("url", {
-            required: true,
-          })}
-          type="url"
-          placeholder="URL"
+        <Controller
+          name="url"
+          control={control}
+          rules={{ required: true }}
+          render={({ field }) => (
+            <>
+              <Input
+                value={field.value || ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                type="url"
+                placeholder="URL"
+              />
+              {errors.url && (
+                <span className="text-red-500 text-xs">URL is required</span>
+              )}
+            </>
+          )}
         />
         <div className="flex justify-end gap-2">
           <Button
