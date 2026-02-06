@@ -63,10 +63,7 @@ export default function LinkFormModal() {
         {editingId ? "Edit Link" : "Add Link"}
       </h2>
       <form
-        onSubmit={handleSubmit(
-          editingId ? handleEditLink : handleAddLink,
-          (errors) => console.error("Form validation errors:", errors),
-        )}
+        onSubmit={handleSubmit(editingId ? handleEditLink : handleAddLink)}
         className="flex flex-col gap-2 sm:gap-3 w-full sm:w-96 md:w-120"
       >
         <Controller
