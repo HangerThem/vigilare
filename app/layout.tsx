@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Providers } from "./providers"
+import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -58,6 +59,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-[rgb(var(--background))] text-[rgb(var(--foreground))] transition-colors duration-200">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   )
