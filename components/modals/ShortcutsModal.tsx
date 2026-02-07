@@ -1,73 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Modal from "./Modal"
 import { Command } from "lucide-react"
-import { ModalName } from "@/context/ModalContext"
-
-interface Shortcut {
-  keys: string[]
-  designation: string
-  modalName: ModalName
-}
-
-export const shortcuts: Shortcut[] = [
-  {
-    keys: ["Ctrl", "K"],
-    designation: "Open Command Palette",
-    modalName: "commandPalette",
-  },
-  {
-    keys: ["Ctrl", "P"],
-    designation: "Open Global Search",
-    modalName: "globalSearch",
-  },
-  {
-    keys: ["Ctrl", "I"],
-    designation: "Open Shortcuts",
-    modalName: "shortcuts",
-  },
-  {
-    keys: ["Ctrl", "L"],
-    designation: "New Link",
-    modalName: "links",
-  },
-  {
-    keys: ["Ctrl", "Shift", "N"],
-    designation: "New Note",
-    modalName: "notes",
-  },
-  {
-    keys: ["Ctrl", "Shift", "C"],
-    designation: "New Command",
-    modalName: "commands",
-  },
-  {
-    keys: ["Ctrl", "S"],
-    designation: "New Status",
-    modalName: "status",
-  },
-  {
-    keys: ["Ctrl", ","],
-    designation: "Open Settings",
-    modalName: "settings",
-  },
-]
+import { useSettings } from "@/context/SettingsContext"
 
 export default function ShortcutsModal() {
-  const [metaKey, setMetaKey] = useState<React.ReactNode>("Ctrl")
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      setMetaKey(
-        navigator.userAgent.includes("Macintosh") ? (
-          <Command size={14} />
-        ) : (
-          "Ctrl"
-        ),
-      )
-    })
-  }, [])
+  const { settings } = useSettings()
 
   return (
     <Modal name="shortcuts">
@@ -81,7 +19,7 @@ export default function ShortcutsModal() {
             </tr>
           </thead>
           <tbody>
-            {shortcuts.map((shortcut) => (
+            {Object.values(settings.shortcuts).map((shortcut) => (
               <tr key={shortcut.designation}>
                 <td className="py-2 pr-2 sm:pr-4 align-top">
                   {shortcut.designation}
@@ -93,7 +31,11 @@ export default function ShortcutsModal() {
                         key={index}
                         className="px-1.5 sm:px-2 py-0.5 sm:py-1 border border-[rgb(var(--muted))] rounded bg-[rgb(var(--muted-background))] text-[rgb(var(--muted))] text-xs sm:text-sm flex items-center justify-center"
                       >
-                        {key === "Ctrl" ? metaKey : key}
+                        {key === "Meta" ? (
+                          <Command size={14} aria-label="Control" />
+                        ) : (
+                          key
+                        )}
                       </span>
                     ))}
                   </div>

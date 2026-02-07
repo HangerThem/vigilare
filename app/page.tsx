@@ -9,24 +9,27 @@ import { useEffect } from "react"
 import CommandPaletteModal from "@/components/modals/CommandPaletteModal"
 import { useModal } from "@/context/ModalContext"
 import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
-import ShortcutsModal, { shortcuts } from "@/components/modals/ShortcutsModal"
+import ShortcutsModal from "@/components/modals/ShortcutsModal"
 import SettingsModal from "@/components/modals/SettingsModal"
 import ConfirmModal from "@/components/modals/ConfirmDialogModal"
 import { useSettings } from "@/context/SettingsContext"
 
 export default function Home() {
   const { openModal, isModalOpen, closeModal } = useModal()
-  const { settings } = useSettings()
+  const { settings, isEditingShortcut } = useSettings()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const shortcut = shortcuts.find(
+      if (isEditingShortcut) return
+
+      const shortcut = Object.values(settings.shortcuts).find(
         (s) =>
           s.keys.every(
             (key) =>
               e.key.toUpperCase() === key.toUpperCase() ||
               (key === "Shift" && e.shiftKey) ||
-              (key === "Ctrl" && (e.ctrlKey || e.metaKey)),
+              (key === "Ctrl" && e.ctrlKey) ||
+              (key === "Meta" && e.metaKey),
           ) &&
           s.keys.length ===
             (e.ctrlKey || e.metaKey ? 1 : 0) + (e.shiftKey ? 1 : 0) + 1,
@@ -43,7 +46,13 @@ export default function Home() {
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [openModal, closeModal, isModalOpen])
+  }, [
+    openModal,
+    closeModal,
+    isModalOpen,
+    settings.shortcuts,
+    isEditingShortcut,
+  ])
 
   return (
     <div
