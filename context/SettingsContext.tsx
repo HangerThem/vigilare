@@ -2,7 +2,29 @@
 
 import { LAST_BACKUP_KEY } from "@/hook/useAutoBackup"
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
-import { createContext, useContext, useEffect } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
+import { ModalName } from "@/context/ModalContext"
+import useIsMac from "@/hook/useIsMac"
+
+export type ShortcutName =
+  | "openCommandPalette"
+  | "openGlobalSearch"
+  | "openShortcuts"
+  | "newLink"
+  | "newNote"
+  | "newCommand"
+  | "newStatus"
+  | "openSettings"
+
+type Shortcut = {
+  keys: string[]
+  designation: string
+  modalName: ModalName
+}
+
+type Shortcuts = {
+  [key in ShortcutName]: Shortcut
+}
 
 export interface AppSettings {
   // Appearance
@@ -24,6 +46,52 @@ export interface AppSettings {
   maxItemsPerPanel: number // 0 = unlimited
   autoBackupEnabled: boolean
   autoBackupIntervalDays: number
+
+  // Shortcuts
+  shortcuts: Shortcuts
+}
+
+const defaultShortcuts: Shortcuts = {
+  openCommandPalette: {
+    keys: ["MOD", "K"],
+    designation: "Open Command Palette",
+    modalName: "commandPalette",
+  },
+  openGlobalSearch: {
+    keys: ["MOD", "P"],
+    designation: "Open Global Search",
+    modalName: "globalSearch",
+  },
+  openShortcuts: {
+    keys: ["MOD", "I"],
+    designation: "Open Shortcuts",
+    modalName: "shortcuts",
+  },
+  newLink: {
+    keys: ["MOD", "L"],
+    designation: "New Link",
+    modalName: "links",
+  },
+  newNote: {
+    keys: ["MOD", "Shift", "N"],
+    designation: "New Note",
+    modalName: "notes",
+  },
+  newCommand: {
+    keys: ["MOD", "Shift", "C"],
+    designation: "New Command",
+    modalName: "commands",
+  },
+  newStatus: {
+    keys: ["MOD", "S"],
+    designation: "New Status",
+    modalName: "status",
+  },
+  openSettings: {
+    keys: ["MOD", ","],
+    designation: "Open Settings",
+    modalName: "settings",
+  },
 }
 
 const defaultSettings: AppSettings = {
@@ -37,22 +105,46 @@ const defaultSettings: AppSettings = {
   maxItemsPerPanel: 0,
   autoBackupEnabled: false,
   autoBackupIntervalDays: 7,
+  shortcuts: defaultShortcuts,
 }
 
 interface SettingsContextType {
   settings: AppSettings
+  isEditingShortcut: boolean
+  startEditingShortcut: () => void
+  stopEditingShortcut: () => void
   updateSetting: <K extends keyof AppSettings>(
     key: K,
     value: AppSettings[K],
   ) => void
+  updateShortcut: (shortcutName: ShortcutName, newKeys: string[]) => void
+  resetShortcut: (shortcutName: ShortcutName) => void
   resetSettings: () => void
+  isShortcutChanged: (shortcutName: ShortcutName) => boolean
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const isMac = useIsMac()
+  const [isEditingShortcut, setIsEditingShortcut] = useState(false)
+  const platformShortcuts: Shortcuts = Object.fromEntries(
+    Object.entries(defaultShortcuts).map(([name, shortcut]) => [
+      name,
+      {
+        ...shortcut,
+        keys: shortcut.keys.map((key) =>
+          key === "MOD" ? (isMac ? "Meta" : "Ctrl") : key,
+        ),
+      },
+    ]),
+  ) as Shortcuts
+
   const { value: settings, setValue: setSettings } =
-    useLocalStorageState<AppSettings>("appSettings", defaultSettings)
+    useLocalStorageState<AppSettings>("appSettings", {
+      ...defaultSettings,
+      shortcuts: platformShortcuts,
+    })
   const { value: lastBackupTimestamp, setValue: setLastBackupTimestamp } =
     useLocalStorageState<number | null>(LAST_BACKUP_KEY, null)
 
@@ -63,8 +155,42 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
+  const updateShortcut = (shortcutName: ShortcutName, newKeys: string[]) => {
+    setSettings((prev) => ({
+      ...prev,
+      shortcuts: {
+        ...prev.shortcuts,
+        [shortcutName]: {
+          ...prev.shortcuts[shortcutName],
+          keys: newKeys,
+        },
+      },
+    }))
+  }
+
+  const resetShortcut = (shortcutName: ShortcutName) => {
+    const fallback = isMac ? "Meta" : "Ctrl"
+    const defaultKeys = defaultShortcuts[shortcutName].keys.map((key) =>
+      key === "MOD" ? fallback : key,
+    )
+
+    updateShortcut(shortcutName, defaultKeys)
+  }
+
+  const isShortcutChanged = (shortcutName: ShortcutName) => {
+    const currentKeys = settings.shortcuts[shortcutName].keys
+    const defaultKeys = platformShortcuts[shortcutName].keys
+    return (
+      currentKeys.length !== defaultKeys.length ||
+      currentKeys.some((key, index) => key !== defaultKeys[index])
+    )
+  }
+
   const resetSettings = () => {
-    setSettings(defaultSettings)
+    setSettings({
+      ...defaultSettings,
+      shortcuts: platformShortcuts,
+    })
   }
 
   useEffect(() => {
@@ -77,7 +203,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SettingsContext.Provider
-      value={{ settings, updateSetting, resetSettings }}
+      value={{
+        settings,
+        isEditingShortcut,
+        startEditingShortcut: () => setIsEditingShortcut(true),
+        stopEditingShortcut: () => setIsEditingShortcut(false),
+        updateSetting,
+        updateShortcut,
+        resetShortcut,
+        resetSettings,
+        isShortcutChanged,
+      }}
     >
       {children}
     </SettingsContext.Provider>
