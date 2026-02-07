@@ -1,6 +1,7 @@
 "use client"
 
 import { ModalName, useModal } from "@/context/ModalContext"
+import { useSettings } from "@/context/SettingsContext"
 import { motion, AnimatePresence } from "framer-motion"
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
@@ -13,6 +14,8 @@ interface ModalProps {
 
 export default function Modal({ name, onClose, children }: ModalProps) {
   const { isModalOpen, closeModal } = useModal()
+  const { isEditingShortcut } = useSettings()
+  const isOpen = isModalOpen(name)
   const onCloseRef = useRef(onClose)
   const modalRef = useRef<HTMLDivElement>(null)
   const [visualViewportHeight, setVisualViewportHeight] = useState<
@@ -32,7 +35,7 @@ export default function Modal({ name, onClose, children }: ModalProps) {
   }, [])
 
   useEffect(() => {
-    if (!isModalOpen(name)) return
+    if (!isOpen) return
 
     const viewport = window.visualViewport
     if (!viewport) return
@@ -48,10 +51,12 @@ export default function Modal({ name, onClose, children }: ModalProps) {
       viewport.removeEventListener("resize", handleResize)
       setVisualViewportHeight(null)
     }
-  }, [isModalOpen, name])
+  }, [isOpen, name])
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
+      if (isEditingShortcut) return
+
       if (event.key === "Escape") {
         handleClose()
       }
@@ -60,16 +65,16 @@ export default function Modal({ name, onClose, children }: ModalProps) {
     return () => {
       document.removeEventListener("keydown", handleEscape)
     }
-  }, [handleClose])
+  }, [handleClose, isEditingShortcut])
 
   useEffect(() => {
-    if (isModalOpen(name)) {
+    if (isOpen) {
       document.body.style.overflow = "hidden"
     }
     return () => {
       document.body.style.overflow = ""
     }
-  }, [isModalOpen, name])
+  }, [isOpen, name])
 
   if (typeof document === "undefined") {
     return null

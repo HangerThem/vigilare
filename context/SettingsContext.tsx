@@ -120,6 +120,7 @@ interface SettingsContextType {
   updateShortcut: (shortcutName: ShortcutName, newKeys: string[]) => void
   resetShortcut: (shortcutName: ShortcutName) => void
   resetSettings: () => void
+  isShortcutChanged: (shortcutName: ShortcutName) => boolean
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null)
@@ -176,6 +177,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     updateShortcut(shortcutName, defaultKeys)
   }
 
+  const isShortcutChanged = (shortcutName: ShortcutName) => {
+    const currentKeys = settings.shortcuts[shortcutName].keys
+    const defaultKeys = platformShortcuts[shortcutName].keys
+    return (
+      currentKeys.length !== defaultKeys.length ||
+      currentKeys.some((key, index) => key !== defaultKeys[index])
+    )
+  }
+
   const resetSettings = () => {
     setSettings({
       ...defaultSettings,
@@ -202,6 +212,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         updateShortcut,
         resetShortcut,
         resetSettings,
+        isShortcutChanged,
       }}
     >
       {children}

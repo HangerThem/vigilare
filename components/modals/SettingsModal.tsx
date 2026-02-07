@@ -5,9 +5,9 @@ import { useSettings } from "@/context/SettingsContext"
 import { Select } from "../ui/Select"
 import { Input } from "../ui/Input"
 import { Button } from "../ui/Button"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Toggle from "../ui/Toggle"
-import { Command } from "lucide-react"
+import { Command, RotateCcw } from "lucide-react"
 import { ShortcutName } from "@/context/SettingsContext"
 
 const MODIFIER_KEYS = ["Shift", "Control", "Meta", "Alt"]
@@ -63,6 +63,7 @@ export default function SettingsModal() {
     resetSettings,
     startEditingShortcut,
     stopEditingShortcut,
+    isShortcutChanged,
   } = useSettings()
   const [activeTab, setActiveTab] = useState<
     "appearance" | "behavior" | "data" | "shortcuts"
@@ -78,17 +79,33 @@ export default function SettingsModal() {
     keys: string[]
   } | null>(null)
 
+  const clearEditingMessages = useCallback(() => {
+    setShortcutConflict(null)
+    setShortcutPreview(null)
+    setValidationError(null)
+    setPendingConflict(null)
+  }, [])
+
+  const resetEditingState = useCallback(() => {
+    setEditingShortcut(null)
+    clearEditingMessages()
+    stopEditingShortcut()
+  }, [clearEditingMessages, stopEditingShortcut])
+
+  const beginEditingShortcut = useCallback(
+    (name: ShortcutName) => {
+      setEditingShortcut(name)
+      clearEditingMessages()
+    },
+    [clearEditingMessages],
+  )
+
   const tabs = [
     { id: "appearance" as const, label: "Appearance" },
     { id: "behavior" as const, label: "Behavior" },
     { id: "data" as const, label: "Data" },
     { id: "shortcuts" as const, label: "Shortcuts" },
   ]
-
-  useEffect(() => {
-    if (activeTab === "shortcuts" || !editingShortcut) return
-    stopEditingShortcut()
-  }, [activeTab, editingShortcut, stopEditingShortcut])
 
   useEffect(() => {
     if (!editingShortcut) return
@@ -98,14 +115,14 @@ export default function SettingsModal() {
       event.preventDefault()
       event.stopPropagation()
 
+      if (event.key === "Escape") {
+        resetEditingState()
+        return
+      }
+
       if (event.key === "Backspace") {
         updateShortcut(editingShortcut, [])
-        setEditingShortcut(null)
-        setShortcutConflict(null)
-        setShortcutPreview(null)
-        setValidationError(null)
-        setPendingConflict(null)
-        stopEditingShortcut()
+        resetEditingState()
         return
       }
 
@@ -143,12 +160,7 @@ export default function SettingsModal() {
       }
 
       updateShortcut(editingShortcut, keys)
-      setEditingShortcut(null)
-      setShortcutConflict(null)
-      setShortcutPreview(null)
-      setValidationError(null)
-      setPendingConflict(null)
-      stopEditingShortcut()
+      resetEditingState()
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -162,6 +174,7 @@ export default function SettingsModal() {
     updateShortcut,
     startEditingShortcut,
     stopEditingShortcut,
+    resetEditingState,
   ])
 
   return (
@@ -170,33 +183,31 @@ export default function SettingsModal() {
         <h2 className="font-bold text-xl sm:text-2xl mb-3 sm:mb-4">Settings</h2>
 
         <div className="flex gap-1 mb-4 sm:mb-6 border-b border-[rgb(var(--border))] overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id)
-                setEditingShortcut(null)
-                setShortcutConflict(null)
-                setShortcutPreview(null)
-                setValidationError(null)
-                setPendingConflict(null)
-                stopEditingShortcut()
-              }}
-              className={`px-3 sm:px-4 py-2 text-sm font-medium transition-colors relative cursor-pointer whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "text-[rgb(var(--foreground))]"
-                  : "text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))]"
-              }`}
-            >
-              {tab.label}
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgb(var(--primary))]" />
-              )}
-            </button>
-          ))}
+          {tabs.map((tab) =>
+            navigator.userAgent.includes("Mobi") &&
+            tab.id === "shortcuts" ? null : (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  resetEditingState()
+                }}
+                className={`px-3 sm:px-4 py-2 text-sm font-medium transition-colors relative cursor-pointer whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "text-[rgb(var(--foreground))]"
+                    : "text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))]"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgb(var(--primary))]" />
+                )}
+              </button>
+            ),
+          )}
         </div>
 
-        <div className="space-y-6 max-h-60 sm:max-h-80 md:max-h-96 overflow-y-auto pr-2">
+        <div className="space-y-6">
           {activeTab === "appearance" && (
             <>
               <SettingSection title="Display">
@@ -303,184 +314,181 @@ export default function SettingsModal() {
           )}
 
           {activeTab === "shortcuts" && (
-            <div className="space-y-3 text-sm">
-              <div className="text-[rgb(var(--muted))]">
-                Click a shortcut to edit, then press the new key combo.
-                {editingShortcut && (
-                  <span className="block mt-1">
-                    Press to cancel or{" "}
-                    <span className="font-medium">Backspace</span> to clear.
-                  </span>
+            <>
+              {/* Fixed-height container: messages consume space, list flexes */}
+              <div className="h-60 sm:h-80 md:h-96 flex flex-col gap-3">
+                {(validationError || shortcutConflict) && (
+                  <div className="space-y-2" aria-live="polite">
+                    {validationError && (
+                      <div className="rounded-lg border border-amber-400/50 bg-amber-400/10 px-3 py-2 text-xs sm:text-sm text-amber-200">
+                        {validationError}
+                      </div>
+                    )}
+                    {shortcutConflict && (
+                      <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs sm:text-sm text-red-200">
+                        <div>{shortcutConflict}</div>
+                        {pendingConflict && editingShortcut && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Button
+                              variant="secondary"
+                              className="text-xs sm:text-sm"
+                              onClick={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                const currentKeys =
+                                  settings.shortcuts[editingShortcut].keys
+                                updateShortcut(
+                                  editingShortcut,
+                                  pendingConflict.keys,
+                                )
+                                updateShortcut(
+                                  pendingConflict.name,
+                                  currentKeys,
+                                )
+                                resetEditingState()
+                              }}
+                            >
+                              Swap
+                            </Button>
+                            <Button
+                              variant="primary"
+                              className="text-xs sm:text-sm"
+                              onClick={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                updateShortcut(pendingConflict.name, [])
+                                updateShortcut(
+                                  editingShortcut,
+                                  pendingConflict.keys,
+                                )
+                                resetEditingState()
+                              }}
+                            >
+                              Overwrite
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              className="text-xs sm:text-sm"
+                              onClick={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                resetEditingState()
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
 
-              {validationError && (
-                <div className="rounded-lg border border-amber-400/50 bg-amber-400/10 px-3 py-2 text-xs sm:text-sm text-amber-200">
-                  {validationError}
-                </div>
-              )}
-
-              {shortcutConflict && (
-                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs sm:text-sm text-red-200">
-                  <div>{shortcutConflict}</div>
-                  {pendingConflict && editingShortcut && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        variant="secondary"
-                        className="text-xs sm:text-sm"
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          const currentKeys =
-                            settings.shortcuts[editingShortcut].keys
-                          updateShortcut(editingShortcut, pendingConflict.keys)
-                          updateShortcut(pendingConflict.name, currentKeys)
-                          setEditingShortcut(null)
-                          setShortcutConflict(null)
-                          setShortcutPreview(null)
-                          setValidationError(null)
-                          setPendingConflict(null)
-                          stopEditingShortcut()
-                        }}
-                      >
-                        Swap
-                      </Button>
-                      <Button
-                        variant="primary"
-                        className="text-xs sm:text-sm"
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          updateShortcut(pendingConflict.name, [])
-                          updateShortcut(editingShortcut, pendingConflict.keys)
-                          setEditingShortcut(null)
-                          setShortcutConflict(null)
-                          setShortcutPreview(null)
-                          setValidationError(null)
-                          setPendingConflict(null)
-                          stopEditingShortcut()
-                        }}
-                      >
-                        Overwrite
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        className="text-xs sm:text-sm"
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          setEditingShortcut(null)
-                          setShortcutConflict(null)
-                          setShortcutPreview(null)
-                          setValidationError(null)
-                          setPendingConflict(null)
-                          stopEditingShortcut()
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                <div className="text-[rgb(var(--muted))]">
+                  Click a shortcut to edit, then press the new key combo.
+                  {editingShortcut && (
+                    <span className="block mt-1">
+                      Press to cancel or{" "}
+                      <span className="font-medium">Backspace</span> to clear.
+                    </span>
                   )}
                 </div>
-              )}
 
-              <div className="space-y-2">
-                {(
-                  Object.entries(settings.shortcuts) as [
-                    ShortcutName,
-                    (typeof settings.shortcuts)[ShortcutName],
-                  ][]
-                ).map(([name, shortcut]) => {
-                  const isEditing = editingShortcut === name
-                  const displayKeys =
-                    isEditing && shortcutPreview
-                      ? shortcutPreview
-                      : shortcut.keys
+                {/* Scrollable shortcut list only */}
+                <div className="space-y-2 flex-1 overflow-y-auto pr-2">
+                  {(
+                    Object.entries(settings.shortcuts) as [
+                      ShortcutName,
+                      (typeof settings.shortcuts)[ShortcutName],
+                    ][]
+                  ).map(([name, shortcut]) => {
+                    const isEditing = editingShortcut === name
+                    const displayKeys =
+                      isEditing && shortcutPreview
+                        ? shortcutPreview
+                        : shortcut.keys
 
-                  return (
-                    <div
-                      key={shortcut.designation}
-                      onClick={() => {
-                        setEditingShortcut(name)
-                        setShortcutConflict(null)
-                        setShortcutPreview(null)
-                        setValidationError(null)
-                        setPendingConflict(null)
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault()
-                          setEditingShortcut(name)
-                          setShortcutConflict(null)
-                          setShortcutPreview(null)
-                          setValidationError(null)
-                          setPendingConflict(null)
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${
-                        isEditing
-                          ? "border-[rgb(var(--primary))] bg-[rgb(var(--muted-background))]"
-                          : "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))]"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-medium">
-                          {shortcut.designation}
-                        </div>
-                        <Button
-                          variant="secondary"
-                          className="text-xs sm:text-sm"
-                          onClick={(event) => {
+                    return (
+                      <div
+                        key={shortcut.designation}
+                        onClick={() => {
+                          beginEditingShortcut(name)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault()
-                            event.stopPropagation()
-                            resetShortcut(name)
-                            setShortcutConflict(null)
-                            setShortcutPreview(null)
-                            setValidationError(null)
-                            setPendingConflict(null)
-                          }}
-                        >
-                          Reset
-                        </Button>
-                      </div>
-                      <div className="mt-2 flex flex-wrap justify-between gap-2">
-                        <div className="flex gap-1 flex-wrap justify-end">
-                          {displayKeys.length === 0 ? (
-                            <span className="text-xs text-[rgb(var(--muted))]">
-                              Not set
-                            </span>
-                          ) : (
-                            displayKeys.map((key, index) => (
-                              <span
-                                key={`${key}-${index}`}
-                                className={`px-1.5 sm:px-2 py-0.5 sm:py-1 border rounded bg-[rgb(var(--muted-background))] text-xs sm:text-sm flex items-center justify-center ${
-                                  isEditing
-                                    ? "border-[rgb(var(--primary))] text-[rgb(var(--foreground))]"
-                                    : "border-[rgb(var(--muted))] text-[rgb(var(--muted))]"
-                                }`}
+                            beginEditingShortcut(name)
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className={`w-full text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${
+                          isEditing
+                            ? "border-[rgb(var(--primary))] bg-[rgb(var(--muted-background))]"
+                            : "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))]"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-medium">
+                              {shortcut.designation}
+                            </div>
+                            {isShortcutChanged(name) && (
+                              <Button
+                                variant="ghost"
+                                className="text-xs sm:text-sm"
+                                onClick={(event) => {
+                                  event.preventDefault()
+                                  event.stopPropagation()
+                                  resetShortcut(name)
+                                  clearEditingMessages()
+                                }}
                               >
-                                {key === "Meta" ? (
-                                  <Command size={14} aria-label="Command" />
-                                ) : (
-                                  key
-                                )}
-                              </span>
-                            ))
-                          )}
+                                <RotateCcw
+                                  size={14}
+                                  aria-label="Reset to default"
+                                />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap justify-between gap-2">
+                            <div className="flex gap-1 flex-wrap justify-end">
+                              {displayKeys.length === 0 ? (
+                                <span className="text-xs text-[rgb(var(--muted))]">
+                                  Not set
+                                </span>
+                              ) : (
+                                displayKeys.map((key, index) => (
+                                  <span
+                                    key={`${key}-${index}`}
+                                    className={`px-1.5 sm:px-2 py-0.5 sm:py-1 border rounded bg-[rgb(var(--muted-background))] text-xs sm:text-sm flex items-center justify-center ${
+                                      isEditing
+                                        ? "border-[rgb(var(--primary))] text-[rgb(var(--foreground))]"
+                                        : "border-[rgb(var(--muted))] text-[rgb(var(--muted))]"
+                                    }`}
+                                  >
+                                    {key === "Meta" ? (
+                                      <Command size={14} aria-label="Command" />
+                                    ) : (
+                                      key
+                                    )}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </div>
                         </div>
+                        {isEditing && (
+                          <div className="mt-2 text-xs text-[rgb(var(--muted))]">
+                            Waiting for new shortcut...
+                          </div>
+                        )}
                       </div>
-                      {isEditing && (
-                        <div className="mt-2 text-xs text-[rgb(var(--muted))]">
-                          Waiting for new shortcut...
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 

@@ -63,6 +63,7 @@ pnpm start
 | `Ctrl/Cmd + Shift + N` | New note             |
 | `Ctrl/Cmd + Shift + C` | New command          |
 | `Ctrl/Cmd + S`         | New status           |
+| `Ctrl/Cmd + ,`         | Open settings        |
 
 ## Tech Stack
 
@@ -76,19 +77,6 @@ pnpm start
 - [React Hook Form](https://react-hook-form.com/) - Form handling
 - [Popper.js](https://popper.js.org/) - Dropdown positioning
 - [Lucide React](https://lucide.dev/) - Icons
-
-## Project Structure
-
-```
-vigilare/
-├── app/                 # Next.js App Router pages and layouts
-├── components/          # React components
-│   └── ui/              # Reusable UI components (Button, Input, etc.)
-├── context/             # React context providers
-├── hook/                # Custom React hooks
-├── public/              # Static assets
-└── utils/               # Utility functions
-```
 
 ## Data Storage
 
