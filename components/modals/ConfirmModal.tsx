@@ -1,10 +1,10 @@
 "use client"
 
-import Modal from "./Modal"
+import Modal from "@/components/modals/Modal"
 import { useConfirmDialog } from "@/context/ConfirmDialogContext"
-import { Button } from "../ui/Button"
+import { Button } from "@/components/ui/Button"
 
-export default function ConfirmDialogModal() {
+export default function ConfirmModal() {
   const { title, message, onConfirm, onCancel } = useConfirmDialog()
 
   return (

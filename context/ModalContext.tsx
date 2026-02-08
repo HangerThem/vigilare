@@ -1,11 +1,6 @@
 "use client"
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-} from "react"
+import { createContext, useContext, useState, useCallback } from "react"
 
 export type ModalName =
   | "commands"
@@ -17,6 +12,7 @@ export type ModalName =
   | "shortcuts"
   | "settings"
   | "confirm"
+  | "importFromText"
 
 type ModalAddContextType = {
   openModal: (modal: ModalName) => void

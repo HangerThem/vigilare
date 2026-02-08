@@ -1,12 +1,12 @@
 "use client"
 
-import Modal from "./Modal"
+import Modal from "@/components/modals/Modal"
 import { useSettings } from "@/context/SettingsContext"
-import { Select } from "../ui/Select"
-import { Input } from "../ui/Input"
-import { Button } from "../ui/Button"
+import { Select } from "@/components/ui/Select"
+import { Input } from "@/components/ui/Input"
+import { Button } from "@/components/ui/Button"
 import { useCallback, useEffect, useState } from "react"
-import Toggle from "../ui/Toggle"
+import Toggle from "@/components/ui/Toggle"
 import { Command, RotateCcw } from "lucide-react"
 import { ShortcutName } from "@/context/SettingsContext"
 

@@ -1,13 +1,16 @@
 "use client"
 
-import Modal from "./Modal"
+import Modal from "@/components/modals/Modal"
 import Fuse from "fuse.js"
 import { useState, useMemo, useEffect, useCallback, useRef } from "react"
-import { Input } from "../ui/Input"
+import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
 import { useTheme } from "@/context/ThemeContext"
 import {
+  ClipboardCopy,
   Download,
+  FileDown,
+  FileUp,
   Import,
   Link,
   Network,
@@ -18,7 +21,7 @@ import {
   SquareSlash,
   Terminal,
 } from "lucide-react"
-import { downloadAppData, importAllAppData } from "@/utils/appData"
+import { downloadAppData, exportState, importAppData } from "@/utils/appData"
 import { useSettings } from "@/context/SettingsContext"
 
 interface CommandBase {
@@ -84,14 +87,6 @@ export default function CommandPaletteModal() {
       },
       {
         type: "action",
-        icon: <Download size={16} />,
-        name: "Export Data",
-        action: () => {
-          downloadAppData()
-        },
-      },
-      {
-        type: "action",
         icon: <Settings size={16} />,
         name: "Open Settings",
         action: () => {
@@ -115,40 +110,54 @@ export default function CommandPaletteModal() {
         },
       },
       {
-        type: "action",
+        type: "commands",
         icon: <Import size={16} />,
         name: "Import Data",
-        action: () => {
-          const fileInput = document.createElement("input")
-          fileInput.type = "file"
-          fileInput.accept = ".json"
-          fileInput.onchange = () => {
-            const file = fileInput.files?.[0]
-            if (!file) {
-              fileInput.remove()
-              return
-            }
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              try {
-                const data = e.target?.result as string
-                JSON.parse(data)
-                importAllAppData(data)
-                window.location.reload()
-              } catch {
-                console.error("Invalid JSON file")
-              } finally {
-                fileInput.remove()
-              }
-            }
-            reader.onerror = () => {
-              console.error("Failed to read file")
-              fileInput.remove()
-            }
-            reader.readAsText(file)
-          }
-          fileInput.click()
-        },
+        commands: [
+          {
+            type: "action",
+            icon: <FileUp size={16} />,
+            name: "Import from JSON",
+            action: () => {
+              importAppData()
+            },
+          },
+          {
+            type: "action",
+            icon: <ClipboardCopy size={16} />,
+            name: "Import from Text",
+            action: () => {
+              openModal("importFromText")
+            },
+          },
+        ],
+      },
+      {
+        type: "commands",
+        icon: <Download size={16} />,
+        name: "Export Data",
+        commands: [
+          {
+            type: "action",
+            icon: <FileDown size={16} />,
+            name: "Export as JSON",
+            action: () => {
+              downloadAppData()
+            },
+          },
+          {
+            type: "action",
+            icon: <ClipboardCopy size={16} />,
+            name: "Copy to Clipboard",
+            action: () => {
+              navigator.clipboard
+                .writeText(exportState(localStorage))
+                .catch((err) => {
+                  console.error("Failed to copy data to clipboard", err)
+                })
+            },
+          },
+        ],
       },
       {
         type: "commands",

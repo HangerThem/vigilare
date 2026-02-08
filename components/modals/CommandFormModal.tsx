@@ -8,7 +8,7 @@ import { Controller, useForm } from "react-hook-form"
 import { nanoid } from "nanoid/non-secure"
 import { useEffect } from "react"
 import hljs from "highlight.js"
-import { Select } from "../ui/Select"
+import { Select } from "@/components/ui/Select"
 
 type CommandFormData = Omit<CommandType, "id">
 

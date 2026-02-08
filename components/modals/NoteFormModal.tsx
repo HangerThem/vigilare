@@ -7,7 +7,7 @@ import { useNotes, NoteType, NoteCategory } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
 import { nanoid } from "nanoid/non-secure"
 import { useEffect, useState } from "react"
-import { Select } from "../ui/Select"
+import { Select } from "@/components/ui/Select"
 
 type NoteFormData = Omit<NoteType, "id">
 

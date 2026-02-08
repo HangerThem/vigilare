@@ -8,7 +8,7 @@ import {
   useCallback,
   useEffect,
 } from "react"
-import { useSettings } from "./SettingsContext"
+import { useSettings } from "@/context/SettingsContext"
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
 
 export type Theme = "light" | "dark" | "system"

@@ -1,6 +1,6 @@
 "use client"
 
-import Modal from "./Modal"
+import Modal from "@/components/modals/Modal"
 import { Command } from "lucide-react"
 import { useSettings } from "@/context/SettingsContext"
 

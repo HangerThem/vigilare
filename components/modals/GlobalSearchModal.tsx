@@ -1,6 +1,6 @@
 "use client"
 
-import Modal from "./Modal"
+import Modal from "@/components/modals/Modal"
 import Fuse from "fuse.js"
 import { useState, useMemo, useCallback } from "react"
 import {
@@ -13,12 +13,12 @@ import {
   CommandType,
   StatusType,
 } from "@/context/DataContext"
-import { Input } from "../ui/Input"
+import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
-import CommandItem from "../panels/items/CommandItem"
-import NoteItem from "../panels/items/NoteItem"
-import LinkItem from "../panels/items/LinkItem"
-import StatusItem from "../panels/items/StatusItem"
+import CommandItem from "@/components/panels/items/CommandItem"
+import NoteItem from "@/components/panels/items/NoteItem"
+import LinkItem from "@/components/panels/items/LinkItem"
+import StatusItem from "@/components/panels/items/StatusItem"
 import { useSettings } from "@/context/SettingsContext"
 
 enum ResultType {

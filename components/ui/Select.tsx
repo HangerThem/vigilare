@@ -7,7 +7,7 @@ import { createPopper, Instance as PopperInstance } from "@popperjs/core"
 import Fuse from "fuse.js"
 import { Check, ChevronDown, Search, X } from "lucide-react"
 import { cn } from "@/utils/cn"
-import { Input } from "./Input"
+import { Input } from "@/components/ui/Input"
 import { useSettings } from "@/context/SettingsContext"
 
 export interface SelectOption {

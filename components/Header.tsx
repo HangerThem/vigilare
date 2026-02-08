@@ -3,7 +3,7 @@
 import { useTheme } from "@/context/ThemeContext"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
-import { Button } from "./ui/Button"
+import { Button } from "@/components/ui/Button"
 import { Menu, Search, Settings, SquareChevronRight } from "lucide-react"
 
 export function Header() {

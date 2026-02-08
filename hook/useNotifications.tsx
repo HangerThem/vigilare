@@ -7,9 +7,9 @@ import {
   useRef,
   useSyncExternalStore,
 } from "react"
-import { useLocalStorageState } from "./useLocalStorageState"
+import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import { StatusType } from "@/context/DataContext"
-import { useOnline } from "./useOnline"
+import { useOnline } from "@/hook/useOnline"
 
 export type NotificationPermission = "default" | "granted" | "denied"
 
