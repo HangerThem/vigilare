@@ -1,6 +1,8 @@
 import { notifyAllStorageListeners } from "@/hook/useLocalStorageState"
 import { deflate, inflate } from "pako"
 
+const KEYS = ["commands", "links", "notes", "status"]
+
 function safeParse(value: string | null): unknown {
   if (value === null) return null
 
@@ -45,22 +47,20 @@ function base64ToUint8(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
 }
 
-export function exportAllAppData(): string {
+export function exportAppData(): string {
   const data: Record<string, unknown> = {}
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (!key) continue
-
-    data[key] = safeParse(localStorage.getItem(key))
+  for (const key of KEYS) {
+    const value = localStorage.getItem(key)
+    if (value !== null) {
+      data[key] = safeParse(value)
+    }
   }
 
   return JSON.stringify(data, null, 2)
 }
 
 export function importAllAppData(data: Record<string, unknown>): void {
-  localStorage.clear()
-
   for (const [key, value] of Object.entries(data)) {
     localStorage.setItem(key, JSON.stringify(value))
   }
@@ -69,7 +69,7 @@ export function importAllAppData(data: Record<string, unknown>): void {
 }
 
 export function downloadAppData(filename = "vigilare-backup.json"): void {
-  const data = exportAllAppData()
+  const data = exportAppData()
   const blob = new Blob([data], { type: "application/json" })
   const url = URL.createObjectURL(blob)
 
@@ -127,6 +127,18 @@ export function exportState(data: Record<string, unknown>): string {
   return uint8ToBase64(compressed)
 }
 
+export function importState(encoded: string): Record<string, unknown> | null {
+  try {
+    const bytes = base64ToUint8(encoded)
+    const json = inflate(bytes, { to: "string" })
+    const raw = JSON.parse(json)
+    return normalizeObject(raw)
+  } catch (err) {
+    console.error("Invalid encoded Vigilare payload", err)
+    return null
+  }
+}
+
 export function importAppDataFromEncoded(encoded: string): void {
   try {
     const bytes = base64ToUint8(encoded)
@@ -134,11 +146,39 @@ export function importAppDataFromEncoded(encoded: string): void {
     const raw = JSON.parse(json)
     const normalized = normalizeObject(raw)
 
-    console.log("Decoded & normalized data:", normalized)
-
     importAllAppData(normalized)
     window.location.reload()
   } catch (err) {
     console.error("Invalid encoded Vigilare payload", err)
   }
+}
+
+export function mergeAppDataFromEncoded(encoded: string): void {
+  try {
+    const existingData: Record<string, unknown> = {}
+    for (const key of KEYS) {
+      const value = localStorage.getItem(key)
+      if (value !== null) {
+        existingData[key] = safeParse(value)
+      }
+    }
+
+    const bytes = base64ToUint8(encoded)
+    const json = inflate(bytes, { to: "string" })
+    const raw = JSON.parse(json)
+    const normalized = normalizeObject(raw)
+
+    const mergedData = { ...existingData, ...normalized }
+
+    importAllAppData(mergedData)
+    window.location.reload()
+  } catch (err) {
+    console.error("Invalid encoded Vigilare payload", err)
+  }
+}
+
+export function dataExists(): boolean {
+  return KEYS.map((key) => localStorage.getItem(key)).some(
+    (value) => value !== null && value !== "[]",
+  )
 }

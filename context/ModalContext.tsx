@@ -13,6 +13,7 @@ export type ModalName =
   | "settings"
   | "confirm"
   | "importFromText"
+  | "shareDashboard"
 
 type ModalAddContextType = {
   openModal: (modal: ModalName) => void

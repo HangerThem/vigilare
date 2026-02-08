@@ -18,6 +18,7 @@ import {
   PaintRoller,
   Search,
   Settings,
+  Share,
   SquareSlash,
   Terminal,
 } from "lucide-react"
@@ -172,6 +173,14 @@ export default function CommandPaletteModal() {
           },
         })),
       },
+      {
+        type: "action",
+        icon: <Share size={16} />,
+        name: "Share Dashboard",
+        action: () => {
+          openModal("shareDashboard")
+        },
+      },
     ]
 
     return commands
@@ -221,7 +230,7 @@ export default function CommandPaletteModal() {
   useEffect(() => {
     if (itemRefs.current[clampedSelectedIndex]) {
       itemRefs.current[clampedSelectedIndex]?.scrollIntoView({
-        block: "center",
+        block: "nearest",
         behavior: "smooth",
       })
     }
