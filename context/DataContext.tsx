@@ -3,7 +3,7 @@
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import { createContext, useContext, useState, useCallback } from "react"
 import { useConfirmDialog } from "@/context/ConfirmDialogContext"
-import { useSettings } from "./SettingsContext"
+import { useSettings } from "@/context/SettingsContext"
 
 export type CommandType = {
   id: string

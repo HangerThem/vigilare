@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef } from "react"
 import { useSettings } from "@/context/SettingsContext"
-import { exportAllAppData } from "@/utils/appData"
+import { exportAppData } from "@/utils/appData"
 
 export const LAST_BACKUP_KEY = "lastAutoBackupTimestamp"
 
@@ -17,7 +17,7 @@ function setLastBackupTimestamp(timestamp: number): void {
 }
 
 function downloadBackup(): void {
-  const data = exportAllAppData()
+  const data = exportAppData()
   const date = new Date().toISOString().split("T")[0]
   const filename = `vigilare-auto-backup-${date}.json`
 

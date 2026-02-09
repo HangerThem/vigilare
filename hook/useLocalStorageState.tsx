@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react"
 
-// Global listeners map for same-window updates
 const listeners = new Map<string, Set<() => void>>()
 
 function notifyListeners(key: string) {
@@ -8,14 +7,12 @@ function notifyListeners(key: string) {
   if (keyListeners) {
     keyListeners.forEach((callback) => callback())
   }
-  // Also notify "all" listeners (for import all functionality)
   const allListeners = listeners.get("__all__")
   if (allListeners) {
     allListeners.forEach((callback) => callback())
   }
 }
 
-// Export for use in appData.ts import functionality
 export function notifyAllStorageListeners() {
   const allListeners = listeners.get("__all__")
   if (allListeners) {
@@ -24,25 +21,21 @@ export function notifyAllStorageListeners() {
 }
 
 export function useLocalStorageState<T>(key: string, initialValue: T) {
-  // Serialize initialValue once to use as stable fallback string
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialValueSerialized = useMemo(() => JSON.stringify(initialValue), [])
 
   const subscribe = useCallback(
     (callback: () => void) => {
-      // Add to global listeners for same-window updates
       if (!listeners.has(key)) {
         listeners.set(key, new Set())
       }
       listeners.get(key)!.add(callback)
 
-      // Also listen to "__all__" for import functionality
       if (!listeners.has("__all__")) {
         listeners.set("__all__", new Set())
       }
       listeners.get("__all__")!.add(callback)
 
-      // Listen for cross-tab storage events
       const handler = (e: StorageEvent) => {
         if (e.key === key || e.key === null) callback()
       }

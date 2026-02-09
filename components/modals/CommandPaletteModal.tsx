@@ -1,9 +1,9 @@
 "use client"
 
-import Modal from "./Modal"
+import Modal from "@/components/modals/Modal"
 import Fuse from "fuse.js"
 import { useState, useMemo, useEffect, useCallback, useRef } from "react"
-import { Input } from "../ui/Input"
+import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
 import { useTheme } from "@/context/ThemeContext"
 import {
@@ -18,7 +18,7 @@ import {
   SquareSlash,
   Terminal,
 } from "lucide-react"
-import { downloadAppData, importAllAppData } from "@/utils/appData"
+import { downloadAppData, importAppDataFile } from "@/utils/appData"
 import { useSettings } from "@/context/SettingsContext"
 
 interface CommandBase {
@@ -84,14 +84,6 @@ export default function CommandPaletteModal() {
       },
       {
         type: "action",
-        icon: <Download size={16} />,
-        name: "Export Data",
-        action: () => {
-          downloadAppData()
-        },
-      },
-      {
-        type: "action",
         icon: <Settings size={16} />,
         name: "Open Settings",
         action: () => {
@@ -119,35 +111,15 @@ export default function CommandPaletteModal() {
         icon: <Import size={16} />,
         name: "Import Data",
         action: () => {
-          const fileInput = document.createElement("input")
-          fileInput.type = "file"
-          fileInput.accept = ".json"
-          fileInput.onchange = () => {
-            const file = fileInput.files?.[0]
-            if (!file) {
-              fileInput.remove()
-              return
-            }
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              try {
-                const data = e.target?.result as string
-                JSON.parse(data)
-                importAllAppData(data)
-                window.location.reload()
-              } catch {
-                console.error("Invalid JSON file")
-              } finally {
-                fileInput.remove()
-              }
-            }
-            reader.onerror = () => {
-              console.error("Failed to read file")
-              fileInput.remove()
-            }
-            reader.readAsText(file)
-          }
-          fileInput.click()
+          importAppDataFile()
+        },
+      },
+      {
+        type: "action",
+        icon: <Download size={16} />,
+        name: "Export Data",
+        action: () => {
+          downloadAppData()
         },
       },
       {
@@ -212,7 +184,7 @@ export default function CommandPaletteModal() {
   useEffect(() => {
     if (itemRefs.current[clampedSelectedIndex]) {
       itemRefs.current[clampedSelectedIndex]?.scrollIntoView({
-        block: "center",
+        block: "nearest",
         behavior: "smooth",
       })
     }
