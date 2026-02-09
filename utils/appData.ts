@@ -10,7 +10,7 @@ import { notifyAllStorageListeners } from "@/hook/useLocalStorageState"
  * The key used for storing settings in localStorage.
  * @constant
  */
-const SETTINGS_KEY = "settings"
+const SETTINGS_KEY = "appSettings"
 /**
  * The keys used for storing main app data in localStorage.
  * @constant
