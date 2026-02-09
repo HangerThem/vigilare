@@ -3,23 +3,31 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { RichTextarea } from "@/components/ui/RichTextarea"
 import { useModal } from "@/context/ModalContext"
-import { useNotes, NoteType, NoteCategory } from "@/context/DataContext"
+import { useNotes } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { nanoid } from "nanoid/non-secure"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { Select } from "@/components/ui/Select"
 import BacklinkPickerModal, {
   BacklinkTarget,
 } from "@/components/modals/BacklinkPickerModal"
+import { CATEGORY_META } from "@/const/Category"
+import { Note, NoteSchema } from "@/types/Note.type"
+import { zodResolver } from "@hookform/resolvers/zod"
 
-type NoteFormData = Omit<NoteType, "id">
+type NoteFormData = Omit<Note, "id" | "type">
+
+const defaultValues: NoteFormData = {
+  category: "other",
+  title: "",
+  content: "",
+}
 
 export default function NoteFormModal() {
   const { add, update, editingId, setEditingId, editingItem } = useNotes()
   const [categoryOptions] = useState(
-    Object.values(NoteCategory).map((cat) => ({
-      value: cat,
-      label: cat.charAt(0) + cat.slice(1).toLowerCase(),
+    Object.values(CATEGORY_META).map((cat) => ({
+      value: cat.name.toLowerCase(),
+      label: cat.name,
     })),
   )
 
@@ -27,7 +35,10 @@ export default function NoteFormModal() {
   const isOpen = isModalOpen("notes")
 
   const { control, handleSubmit, reset, getValues, setValue } =
-    useForm<NoteFormData>()
+    useForm<NoteFormData>({
+      resolver: zodResolver(NoteSchema),
+      defaultValues,
+    })
   const [isPickingBacklink, setIsPickingBacklink] = useState(false)
   const pendingBacklinkRef = useRef<{ start: number; end: number } | null>(null)
   const contentRef = useRef<HTMLTextAreaElement>(null)
@@ -55,7 +66,7 @@ export default function NoteFormModal() {
 
   const handleAddNote = (data: NoteFormData) => {
     const { category, title, content } = data
-    add({ id: nanoid(), category, title, content })
+    add(NoteSchema.parse({ category, title, content }))
     closeModal()
   }
 
@@ -72,7 +83,7 @@ export default function NoteFormModal() {
     if (!isOpen) {
       setEditingId(null)
       pendingBacklinkRef.current = null
-      reset({ category: NoteCategory.OTHER, title: "", content: "" })
+      reset(defaultValues)
       return
     }
 
@@ -83,7 +94,7 @@ export default function NoteFormModal() {
         content: editingItem.content,
       })
     } else {
-      reset({ category: NoteCategory.OTHER, title: "", content: "" })
+      reset(defaultValues)
     }
   }, [isOpen, editingItem, reset, setEditingId])
 
@@ -107,7 +118,6 @@ export default function NoteFormModal() {
         <Controller
           name="category"
           control={control}
-          defaultValue={"" as NoteCategory}
           render={({ field }) => (
             <Select
               value={field.value}

@@ -1,33 +1,22 @@
 import { GripVertical, Pencil, Trash } from "lucide-react"
-import { LinkCategory, LinkType, useLinks } from "@/context/DataContext"
+import { useLinks } from "@/context/DataContext"
 import { motion } from "framer-motion"
 import { useModal } from "@/context/ModalContext"
 import LinkWithSettings from "@/components/common/LinkWithSettings"
 import { useSettings } from "@/context/SettingsContext"
+import { Link } from "@/types/Link.type"
+import { CATEGORY_META } from "@/const/Category"
 
 interface LinkItemProps {
-  link: LinkType
-  movable?: boolean
-  compact?: boolean
+  link: Link
 }
 
-const categoryColors: Record<LinkCategory, string> = {
-  [LinkCategory.WORK]: "bg-blue-500",
-  [LinkCategory.PERSONAL]: "bg-green-500",
-  [LinkCategory.STUDY]: "bg-yellow-500",
-  [LinkCategory.OTHER]: "bg-gray-500",
-}
-
-export default function LinkItem({
-  link,
-  movable = true,
-  compact: compactProp,
-}: LinkItemProps) {
+export default function LinkItem({ link }: LinkItemProps) {
   const { setEditingId, remove } = useLinks()
   const { openModal } = useModal()
   const { settings } = useSettings()
 
-  const compact = compactProp ?? settings.compactMode
+  const compact = settings.compactMode
 
   return (
     <motion.li
@@ -64,17 +53,16 @@ export default function LinkItem({
         </div>
 
         <div
-          className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0 ${categoryColors[link.category]}`}
-        ></div>
+          className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0`}
+          style={{ backgroundColor: CATEGORY_META[link.category].color }}
+        />
 
-        {movable && (
-          <GripVertical
-            size={compact ? 16 : 20}
-            className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
-          />
-        )}
+        <GripVertical
+          size={compact ? 16 : 20}
+          className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
+        />
 
-        <div className={!movable ? "ml-2" : "mr-auto min-w-0 flex-1"}>
+        <div className="mr-auto min-w-0 flex-1">
           <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
             {link.title}
           </span>

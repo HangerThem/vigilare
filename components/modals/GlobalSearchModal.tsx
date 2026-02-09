@@ -6,41 +6,26 @@ import { useState, useMemo, useCallback } from "react"
 import {
   useLinks,
   useNotes,
-  useCommands,
+  useSnippets,
   useStatuses,
-  LinkType,
-  NoteType,
-  CommandType,
-  StatusType,
 } from "@/context/DataContext"
 import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
+import { Item, ItemType } from "@/types/Item.type"
 
-enum ResultType {
-  LINK = "link",
-  NOTE = "note",
-  COMMAND = "command",
-  STATUS = "status",
+const TYPE_LABELS: Record<ItemType, string> = {
+  link: "Link",
+  note: "Note",
+  snippet: "Command",
+  status: "Status",
 }
 
-type SearchResult = {
-  type: ResultType
-  item: LinkType | NoteType | CommandType | StatusType
-}
-
-const TYPE_LABELS: Record<ResultType, string> = {
-  [ResultType.NOTE]: "Note",
-  [ResultType.LINK]: "Link",
-  [ResultType.COMMAND]: "Command",
-  [ResultType.STATUS]: "Status",
-}
-
-const TYPE_STYLES: Record<ResultType, string> = {
-  [ResultType.NOTE]: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-  [ResultType.LINK]: "bg-green-500/10 text-green-500 border-green-500/30",
-  [ResultType.COMMAND]: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-  [ResultType.STATUS]: "bg-purple-500/10 text-purple-500 border-purple-500/30",
+const TYPE_STYLES: Record<ItemType, string> = {
+  note: "bg-blue-500/10 text-blue-500 border-blue-500/30",
+  link: "bg-green-500/10 text-green-500 border-green-500/30",
+  snippet: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
+  status: "bg-purple-500/10 text-purple-500 border-purple-500/30",
 }
 
 export default function GlobalSearchModal() {
@@ -49,7 +34,7 @@ export default function GlobalSearchModal() {
   const { settings } = useSettings()
   const { items: links, setEditingId: setLinkEditingId } = useLinks()
   const { items: notes, setEditingId: setNoteEditingId } = useNotes()
-  const { items: commands, setEditingId: setCommandEditingId } = useCommands()
+  const { items: snippets, setEditingId: setSnippetEditingId } = useSnippets()
   const { items: statuses, setEditingId: setStatusEditingId } = useStatuses()
 
   const isOpen = isModalOpen("globalSearch")
@@ -65,27 +50,24 @@ export default function GlobalSearchModal() {
     }
 
     const typeMatch = effectiveQuery.match(/^@(\w+)\s*/i)
-    let typeFilter: ResultType | undefined
+    let typeFilter: ItemType | undefined
     if (typeMatch) {
       const typeStr = typeMatch[1].toLowerCase()
-      typeFilter = Object.values(ResultType).find((t) => t === typeStr) as
-        | ResultType
-        | undefined
+      const labelMatch = Object.entries(TYPE_LABELS).find(
+        ([, label]) => label.toLowerCase() === typeStr,
+      )
+      typeFilter =
+        (Object.keys(TYPE_LABELS) as ItemType[]).find(
+          (type) => type === typeStr,
+        ) ?? (labelMatch?.[0] as ItemType | undefined)
       effectiveQuery = effectiveQuery.slice(typeMatch[0].length)
     }
 
-    let allItems: SearchResult[] = [
-      ...links.map((link) => ({ type: ResultType.LINK, item: link })),
-      ...notes.map((note) => ({ type: ResultType.NOTE, item: note })),
-      ...commands.map((command) => ({
-        type: ResultType.COMMAND,
-        item: command,
-      })),
-      ...statuses.map((status) => ({
-        type: ResultType.STATUS,
-        item: status,
-      })),
-    ]
+    if (effectiveQuery === "" && !typeFilter) {
+      return []
+    }
+
+    let allItems: Item[] = [...links, ...notes, ...snippets, ...statuses]
 
     if (typeFilter) {
       allItems = allItems.filter((item) => item.type === typeFilter)
@@ -96,7 +78,7 @@ export default function GlobalSearchModal() {
     }
 
     const fuse = new Fuse(allItems, {
-      keys: ["item.url", "item.code", "item.title", "item.content"],
+      keys: ["url", "code", "title", "content"],
       threshold: settings.fuzzySearchThreshold,
     })
 
@@ -106,35 +88,35 @@ export default function GlobalSearchModal() {
     query,
     links,
     notes,
-    commands,
+    snippets,
     statuses,
     settings.fuzzySearchThreshold,
   ])
 
   const handleOpenResult = useCallback(
-    (result: SearchResult) => {
+    (result: Item) => {
       switch (result.type) {
-        case ResultType.NOTE:
-          setNoteEditingId(result.item.id)
+        case "note":
+          setNoteEditingId(result.id)
           openModal("notes")
           break
-        case ResultType.LINK:
-          setLinkEditingId(result.item.id)
+        case "link":
+          setLinkEditingId(result.id)
           openModal("links")
           break
-        case ResultType.COMMAND:
-          setCommandEditingId(result.item.id)
-          openModal("commands")
+        case "snippet":
+          setSnippetEditingId(result.id)
+          openModal("snippets")
           break
-        case ResultType.STATUS:
-          setStatusEditingId(result.item.id)
+        case "status":
+          setStatusEditingId(result.id)
           openModal("status")
           break
       }
     },
     [
       openModal,
-      setCommandEditingId,
+      setSnippetEditingId,
       setLinkEditingId,
       setNoteEditingId,
       setStatusEditingId,
@@ -177,7 +159,7 @@ export default function GlobalSearchModal() {
             <div className="space-y-2">
               {results.map((result) => (
                 <button
-                  key={`${result.type}:${result.item.id}`}
+                  key={`${result.type}:${result.id}`}
                   type="button"
                   onClick={() => handleOpenResult(result)}
                   className="w-full text-left rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--background))] p-2 transition-colors"
@@ -189,7 +171,7 @@ export default function GlobalSearchModal() {
                       {TYPE_LABELS[result.type]}
                     </span>
                     <span className="font-medium text-sm truncate">
-                      {"title" in result.item ? result.item.title : "Untitled"}
+                      {result.title}
                     </span>
                   </div>
                 </button>

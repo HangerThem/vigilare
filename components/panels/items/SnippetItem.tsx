@@ -1,31 +1,26 @@
 import { AnimatePresence, motion } from "framer-motion"
 import hljs from "highlight.js"
 import { Copy, GripVertical, Pencil, Trash } from "lucide-react"
-import { CommandType, useCommands } from "@/context/DataContext"
 import { useEffect, useState } from "react"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
+import { Snippet } from "@/types/Snippet.type"
+import { useSnippets } from "@/context/DataContext"
 
-interface CommandItemProps {
-  command: CommandType
-  movable?: boolean
-  compact?: boolean
+interface SnippetItemProps {
+  snippet: Snippet
 }
 
-export default function CommandItem({
-  command,
-  movable = true,
-  compact: compactProp,
-}: CommandItemProps) {
+export default function SnippetItem({ snippet }: SnippetItemProps) {
   const { openModal } = useModal()
-  const { setEditingId, remove } = useCommands()
+  const { setEditingId, remove } = useSnippets()
   const { settings } = useSettings()
   const [copied, setCopied] = useState<boolean>(false)
 
-  const compact = compactProp ?? settings.compactMode
+  const compact = settings.compactMode
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(command.code)
+    navigator.clipboard.writeText(snippet.content)
     setCopied(true)
   }
 
@@ -52,8 +47,8 @@ export default function CommandItem({
         <button
           onClick={(e) => {
             e.preventDefault()
-            setEditingId(command.id)
-            openModal("commands")
+            setEditingId(snippet.id)
+            openModal("snippets")
           }}
           className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
         >
@@ -63,7 +58,7 @@ export default function CommandItem({
         <button
           onClick={(e) => {
             e.preventDefault()
-            remove(command.id)
+            remove(snippet.id)
           }}
           className="text-[rgb(var(--muted))] hover:text-red-500 transition-colors cursor-pointer"
         >
@@ -71,23 +66,21 @@ export default function CommandItem({
         </button>
       </div>
 
-      {movable && (
-        <GripVertical
-          size={compact ? 16 : 20}
-          className="mr-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
-        />
-      )}
+      <GripVertical
+        size={compact ? 16 : 20}
+        className="mr-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
+      />
 
       <div className="w-full">
         <span className={`font-medium ${compact ? "text-sm" : ""}`}>
-          {command.title}
+          {snippet.title}
         </span>
 
         {!compact && (
           <div className="text-sm text-[rgb(var(--muted))] border border-[rgb(var(--border))] mt-1 p-1 rounded bg-[rgb(var(--card-hover))] w-full">
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs text-[rgb(var(--muted))] block">
-                {command.language}
+                {snippet.language}
               </span>
               <span className="flex items-center justify-center gap-1">
                 <AnimatePresence>
@@ -114,8 +107,8 @@ export default function CommandItem({
             <code
               className="whitespace-pre-wrap"
               dangerouslySetInnerHTML={{
-                __html: hljs.highlight(command.code, {
-                  language: command.language || "bash",
+                __html: hljs.highlight(snippet.content, {
+                  language: snippet.language || "bash",
                 }).value,
               }}
             />
@@ -124,7 +117,7 @@ export default function CommandItem({
         {compact && (
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-[rgb(var(--muted))]">
-              {command.language}
+              {snippet.language}
             </span>
             <button
               onClick={handleCopy}

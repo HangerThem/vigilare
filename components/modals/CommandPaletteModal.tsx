@@ -69,9 +69,9 @@ export default function CommandPaletteModal() {
       {
         type: "action",
         icon: <Terminal size={16} />,
-        name: "New Command",
+        name: "New Snippet",
         action: () => {
-          openModal("commands")
+          openModal("snippets")
         },
       },
       {

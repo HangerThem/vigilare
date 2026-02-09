@@ -5,11 +5,9 @@ import {
   Trash,
 } from "lucide-react"
 import {
-  NoteCategory,
-  NoteType,
-  useCommands,
   useLinks,
   useNotes,
+  useSnippets,
   useStatuses,
 } from "@/context/DataContext"
 import { motion } from "framer-motion"
@@ -18,35 +16,24 @@ import { useSettings } from "@/context/SettingsContext"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
+import { CATEGORY_META } from "@/const/Category"
+import { Note } from "@/types/Note.type"
 
 interface NoteItemProps {
-  note: NoteType
-  movable?: boolean
-  compact?: boolean
+  note: Note
 }
 
-const categoryColors: Record<NoteCategory, string> = {
-  [NoteCategory.WORK]: "bg-blue-500",
-  [NoteCategory.PERSONAL]: "bg-green-500",
-  [NoteCategory.STUDY]: "bg-yellow-500",
-  [NoteCategory.OTHER]: "bg-gray-500",
-}
-
-export default function NoteItem({
-  note,
-  movable = true,
-  compact: compactProp,
-}: NoteItemProps) {
+export default function NoteItem({ note }: NoteItemProps) {
   const { setEditingId, remove, getById } = useNotes()
-  const { setEditingId: setCommandEditingId, getById: getCommandById } =
-    useCommands()
+  const { setEditingId: setSnippetEditingId, getById: getSnippetById } =
+    useSnippets()
   const { setEditingId: setLinkEditingId, getById: getLinkById } = useLinks()
   const { setEditingId: setStatusEditingId, getById: getStatusById } =
     useStatuses()
   const { openModal } = useModal()
   const { settings } = useSettings()
 
-  const compact = compactProp ?? settings.compactMode
+  const compact = settings.compactMode
 
   const transformUrl = (url?: string) => {
     if (!url) return ""
@@ -70,8 +57,8 @@ export default function NoteItem({
     switch (type) {
       case "note":
         return getById(id)?.title
-      case "command":
-        return getCommandById(id)?.title
+      case "snippet":
+        return getSnippetById(id)?.title
       case "link":
         return getLinkById(id)?.title
       case "status":
@@ -102,9 +89,9 @@ export default function NoteItem({
         setEditingId(id)
         openModal("notes")
         return
-      case "command":
-        setCommandEditingId(id)
-        openModal("commands")
+      case "snippet":
+        setSnippetEditingId(id)
+        openModal("snippets")
         return
       case "link":
         setLinkEditingId(id)
@@ -152,17 +139,16 @@ export default function NoteItem({
       </div>
 
       <div
-        className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0 top-0 ${categoryColors[note.category]}`}
-      ></div>
+        className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0`}
+        style={{ backgroundColor: CATEGORY_META[note.category].color }}
+      />
 
-      {movable && (
-        <GripVertical
-          size={compact ? 16 : 20}
-          className="mx-1 mt-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors flex-shrink-0"
-        />
-      )}
+      <GripVertical
+        size={compact ? 16 : 20}
+        className="mx-1 mt-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors flex-shrink-0"
+      />
 
-      <div className={!movable ? "ml-2" : "mr-auto min-w-0 flex-1"}>
+      <div className="mr-auto min-w-0 flex-1">
         <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
           {note.title}
         </span>

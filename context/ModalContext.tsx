@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback } from "react"
 
 export type ModalName =
-  | "commands"
+  | "snippets"
   | "links"
   | "notes"
   | "status"

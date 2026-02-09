@@ -3,32 +3,42 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
 import { useModal } from "@/context/ModalContext"
-import { useCommands, CommandType } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { nanoid } from "nanoid/non-secure"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect } from "react"
 import hljs from "highlight.js"
 import { Select } from "@/components/ui/Select"
+import { Snippet, SnippetSchema } from "@/types/Snippet.type"
+import { useSnippets } from "@/context/DataContext"
 
-type CommandFormData = Omit<CommandType, "id">
+type SnippetFormData = Omit<Snippet, "id" | "type">
 
-export default function CommandFormModal() {
-  const { add, update, editingId, setEditingId, editingItem } = useCommands()
+const defaultValues: SnippetFormData = {
+  title: "",
+  content: "",
+  language: "bash",
+}
+
+export default function SnippetFormModal() {
+  const { add, update, editingId, setEditingId, editingItem } = useSnippets()
   const { closeModal, isModalOpen } = useModal()
-  const isOpen = isModalOpen("commands")
+  const isOpen = isModalOpen("snippets")
 
-  const { control, handleSubmit, reset } = useForm<CommandFormData>()
+  const { control, handleSubmit, reset } = useForm<SnippetFormData>({
+    resolver: zodResolver(SnippetSchema),
+    defaultValues,
+  })
 
-  const handleAddCommand = (data: CommandFormData) => {
-    const { language, code, title } = data
-    add({ id: nanoid(), code, title, language })
+  const handleAddSnippet = (data: SnippetFormData) => {
+    const { language, content, title } = data
+    add(SnippetSchema.parse({ language, content, title }))
     closeModal()
   }
 
-  const handleEditCommand = (data: CommandFormData) => {
-    const { language, code, title } = data
+  const handleEditSnippet = (data: SnippetFormData) => {
+    const { language, content, title } = data
     if (editingId) {
-      update(editingId, { code, title, language })
+      update(editingId, { content, title, language })
     }
     setEditingId(null)
     closeModal()
@@ -37,7 +47,7 @@ export default function CommandFormModal() {
   useEffect(() => {
     if (!isOpen) {
       setEditingId(null)
-      reset({ language: "", title: "", code: "" })
+      reset(defaultValues)
       return
     }
 
@@ -45,21 +55,21 @@ export default function CommandFormModal() {
       reset({
         language: editingItem.language,
         title: editingItem.title,
-        code: editingItem.code,
+        content: editingItem.content,
       })
     } else {
-      reset({ language: "", title: "", code: "" })
+      reset(defaultValues)
     }
   }, [isOpen, editingItem, reset, setEditingId])
 
   return (
-    <Modal name="commands">
+    <Modal name="snippets">
       <h2 className="font-bold text-xl sm:text-2xl mb-3 sm:mb-4">
         {editingId ? "Edit Command" : "Add Command"}
       </h2>
       <form
         onSubmit={handleSubmit(
-          editingId ? handleEditCommand : handleAddCommand,
+          editingId ? handleEditSnippet : handleAddSnippet,
         )}
         className="flex flex-col gap-2 sm:gap-3 w-full sm:w-96 md:w-120"
       >
@@ -71,7 +81,6 @@ export default function CommandFormModal() {
             <Select
               value={field.value}
               searchable
-              clearable
               placeholder="Language"
               onChange={field.onChange}
               options={hljs.listLanguages().map((lang) => ({
@@ -90,11 +99,16 @@ export default function CommandFormModal() {
           )}
         />
         <Controller
-          name="code"
+          name="content"
           control={control}
           rules={{ required: true }}
           render={({ field }) => (
-            <Textarea {...field} placeholder="Code" autoresize rows={4} />
+            <Textarea
+              {...field}
+              placeholder="Snippet Content"
+              autoresize
+              rows={4}
+            />
           )}
         />
         <div className="flex justify-end gap-2">

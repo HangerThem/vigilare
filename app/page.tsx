@@ -1,6 +1,6 @@
 "use client"
 
-import { CommandsPanel } from "@/components/panels/CommandsPanel"
+import { SnippetsPanel } from "@/components/panels/SnippetsPanel"
 import { Header } from "@/components/Header"
 import { LinksPanel } from "@/components/panels/LinksPanel"
 import { NotesPanel } from "@/components/panels/NotesPanel"
@@ -61,7 +61,7 @@ export default function Home() {
       >
         <LinksPanel />
         <NotesPanel />
-        <CommandsPanel />
+        <SnippetsPanel />
         <StatusPanel />
       </main>
     </div>

@@ -1,32 +1,22 @@
 import { motion } from "framer-motion"
 import { GripVertical, Pencil, Trash } from "lucide-react"
-import { StatusState, StatusType, useStatuses } from "@/context/DataContext"
 import { useModal } from "@/context/ModalContext"
 import LinkWithSettings from "@/components/common/LinkWithSettings"
 import { useSettings } from "@/context/SettingsContext"
+import { useStatuses } from "@/context/DataContext"
+import { Status } from "@/types/Status.type"
+import { STATE_META } from "@/const/State"
 
 interface StatusItemProps {
-  status: StatusType
-  movable?: boolean
-  compact?: boolean
+  status: Status
 }
 
-const stateColors: Record<StatusState, string> = {
-  up: "bg-green-500",
-  down: "bg-red-500",
-  unknown: "bg-gray-500",
-}
-
-export default function StatusItem({
-  status,
-  movable = true,
-  compact: compactProp,
-}: StatusItemProps) {
+export default function StatusItem({ status }: StatusItemProps) {
   const { openModal } = useModal()
   const { setEditingId, remove } = useStatuses()
   const { settings } = useSettings()
 
-  const compact = compactProp ?? settings.compactMode
+  const compact = settings.compactMode
 
   return (
     <motion.li
@@ -38,8 +28,9 @@ export default function StatusItem({
     >
       <LinkWithSettings href={status.url} className="flex items-center">
         <div
-          className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0 ${stateColors[status.state]}`}
-        ></div>
+          className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0`}
+          style={{ backgroundColor: STATE_META[status.state].color }}
+        />
 
         <div
           className={`flex gap-2 absolute ${compact ? "top-1.5 right-1.5" : "top-2 right-2"} items-center`}
@@ -66,21 +57,19 @@ export default function StatusItem({
           </button>
         </div>
 
-        {movable && (
-          <GripVertical
-            size={compact ? 16 : 20}
-            className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
-          />
-        )}
+        <GripVertical
+          size={compact ? 16 : 20}
+          className="mx-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
+        />
 
-        <div className={!movable ? "ml-2" : "mr-auto min-w-0 flex-1"}>
+        <div className="mr-auto min-w-0 flex-1">
           <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
             {status.title}
-            {status.option && (
+            {status.variant && (
               <span
-                className={`ml-2 text-xs px-1.5 py-0.5 rounded bg-[rgb(var(--border))] text-[rgb(var(--muted))] ${compact ? "text-[10px] px-1 py-0" : ""}`}
+                className={`ml-2 text-xs px-1.5 py-0.5 rounded bg-[rgb(var(--border))] text-[rgb(var(--muted))] uppercase ${compact ? "text-[10px] px-1 py-0" : ""}`}
               >
-                {status.option}
+                {status.variant}
               </span>
             )}
           </span>

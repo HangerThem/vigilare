@@ -12,7 +12,7 @@ export type ShortcutName =
   | "openShortcuts"
   | "newLink"
   | "newNote"
-  | "newCommand"
+  | "newSnippet"
   | "newStatus"
   | "openSettings"
 
@@ -77,10 +77,10 @@ const defaultShortcuts: Shortcuts = {
     designation: "New Note",
     modalName: "notes",
   },
-  newCommand: {
-    keys: ["MOD", "Shift", "C"],
-    designation: "New Command",
-    modalName: "commands",
+  newSnippet: {
+    keys: ["MOD", "Shift", "S"],
+    designation: "New Snippet",
+    modalName: "snippets",
   },
   newStatus: {
     keys: ["MOD", "S"],
