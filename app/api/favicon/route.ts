@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
       headers: { "Content-Type": contentType },
     })
   } catch (error) {
-    return new NextResponse("Failed to fetch favicon", { status: 500 })
+    return new NextResponse("Failed to fetch favicon", {
+      status: 500,
+      statusText: (error as Error).message,
+    })
   }
 }

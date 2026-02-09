@@ -27,6 +27,7 @@ export default function LinkItem({ link }: LinkItemProps) {
         const url = new URL(link.url)
         setFaviconUrl(`/favicon?domain=${url.hostname}`)
       } catch (e) {
+        console.error("Invalid URL for favicon:", link.url, e)
         setFaviconUrl("")
       }
     }
@@ -79,7 +80,9 @@ export default function LinkItem({ link }: LinkItemProps) {
         />
 
         <div className="mr-auto min-w-0 flex-1">
-          <span className={`flex items-center gap-1 block font-medium ${compact ? "text-sm" : ""}`}>
+          <span
+            className={`flex items-center gap-1 block font-medium ${compact ? "text-sm" : ""}`}
+          >
             {faviconUrl && (
               <Image
                 src={faviconUrl}
