@@ -62,8 +62,8 @@ export default function SettingsModal() {
     updateShortcut,
     resetShortcut,
     resetSettings,
-    startEditingShortcut,
-    stopEditingShortcut,
+    disableShortcuts,
+    enableShortcuts,
     isShortcutChanged,
   } = useSettings()
   const [activeTab, setActiveTab] = useState<
@@ -90,8 +90,8 @@ export default function SettingsModal() {
   const resetEditingState = useCallback(() => {
     setEditingShortcut(null)
     clearEditingMessages()
-    stopEditingShortcut()
-  }, [clearEditingMessages, stopEditingShortcut])
+    enableShortcuts()
+  }, [clearEditingMessages, enableShortcuts])
 
   const beginEditingShortcut = useCallback(
     (name: ShortcutName) => {
@@ -111,7 +111,7 @@ export default function SettingsModal() {
 
   useEffect(() => {
     if (!editingShortcut) return
-    startEditingShortcut()
+    disableShortcuts()
 
     const handleKeyDown = (event: KeyboardEvent) => {
       event.preventDefault()
@@ -168,14 +168,14 @@ export default function SettingsModal() {
     window.addEventListener("keydown", handleKeyDown)
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
-      stopEditingShortcut()
+      enableShortcuts()
     }
   }, [
     editingShortcut,
     settings.shortcuts,
     updateShortcut,
-    startEditingShortcut,
-    stopEditingShortcut,
+    disableShortcuts,
+    enableShortcuts,
     resetEditingState,
   ])
 

@@ -14,7 +14,7 @@ interface ModalProps {
 
 export default function Modal({ name, onClose, children }: ModalProps) {
   const { isModalOpen, closeModal } = useModal()
-  const { isEditingShortcut } = useSettings()
+  const { isDisableShortcuts } = useSettings()
   const isOpen = isModalOpen(name)
   const onCloseRef = useRef(onClose)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -55,7 +55,7 @@ export default function Modal({ name, onClose, children }: ModalProps) {
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (isEditingShortcut) return
+      if (isDisableShortcuts) return
 
       if (event.key === "Escape") {
         handleClose()
@@ -65,7 +65,7 @@ export default function Modal({ name, onClose, children }: ModalProps) {
     return () => {
       document.removeEventListener("keydown", handleEscape)
     }
-  }, [handleClose, isEditingShortcut])
+  }, [handleClose, isDisableShortcuts])
 
   useEffect(() => {
     if (isOpen) {
