@@ -44,7 +44,7 @@ const TYPE_STYLES: Record<ResultType, string> = {
 }
 
 export default function GlobalSearchModal() {
-  const { isModalOpen, openModal, closeModal } = useModal()
+  const { isModalOpen, openModal } = useModal()
   const [query, setQuery] = useState("")
   const { settings } = useSettings()
   const { items: links, setEditingId: setLinkEditingId } = useLinks()
@@ -131,10 +131,8 @@ export default function GlobalSearchModal() {
           openModal("status")
           break
       }
-      closeModal()
     },
     [
-      closeModal,
       openModal,
       setCommandEditingId,
       setLinkEditingId,
@@ -142,21 +140,6 @@ export default function GlobalSearchModal() {
       setStatusEditingId,
     ],
   )
-
-  const getSubtitle = useCallback((result: SearchResult) => {
-    switch (result.type) {
-      case ResultType.NOTE:
-        return (result.item as NoteType).category
-      case ResultType.LINK:
-        return (result.item as LinkType).url
-      case ResultType.COMMAND:
-        return (result.item as CommandType).language
-      case ResultType.STATUS:
-        return (result.item as StatusType).state
-      default:
-        return ""
-    }
-  }, [])
 
   const handleClose = useCallback(() => {
     setQuery("")
@@ -177,7 +160,7 @@ export default function GlobalSearchModal() {
           autoFocus
         />
 
-        <div className="max-h-60 sm:max-h-80 md:max-h-120 overflow-y-auto pr-2 sm:pr-3">
+        <div className="max-h-60 sm:max-h-80 md:max-h-120 overflow-y-auto">
           {results.length === 0 && query.trim() !== "" && (
             <div className="p-2 text-[rgb(var(--muted))]">
               No results found.
@@ -209,11 +192,6 @@ export default function GlobalSearchModal() {
                       {"title" in result.item ? result.item.title : "Untitled"}
                     </span>
                   </div>
-                  {getSubtitle(result) && (
-                    <div className="mt-1 text-xs text-[rgb(var(--muted))] truncate">
-                      {getSubtitle(result)}
-                    </div>
-                  )}
                 </button>
               ))}
             </div>

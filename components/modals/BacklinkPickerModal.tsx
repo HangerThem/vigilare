@@ -50,25 +50,21 @@ export default function BacklinkPickerModal({
         type: "note" as const,
         id: note.id,
         title: note.title,
-        subtitle: note.category,
       })),
       ...links.items.map((link) => ({
         type: "link" as const,
         id: link.id,
         title: link.title,
-        subtitle: link.url,
       })),
       ...commands.items.map((command) => ({
         type: "command" as const,
         id: command.id,
         title: command.title,
-        subtitle: command.language,
       })),
       ...statuses.items.map((status) => ({
         type: "status" as const,
         id: status.id,
         title: status.title,
-        subtitle: status.state,
       })),
     ]
   }, [notes.items, links.items, commands.items, statuses.items])
@@ -163,7 +159,7 @@ export default function BacklinkPickerModal({
                   key={`${item.type}:${item.id}`}
                   type="button"
                   onClick={() => onPick(item)}
-                  className="w-full text-left rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--background))] p-2 transition-colors"
+                  className="w-full text-left rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--background))] p-2 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -175,11 +171,6 @@ export default function BacklinkPickerModal({
                       {item.title}
                     </span>
                   </div>
-                  {item.subtitle && (
-                    <div className="mt-1 text-xs text-[rgb(var(--muted))] truncate">
-                      {item.subtitle}
-                    </div>
-                  )}
                 </button>
               ))}
             </div>
