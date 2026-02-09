@@ -7,19 +7,17 @@ import { motion, AnimatePresence } from "framer-motion"
 import Fuse from "fuse.js"
 import { Button } from "@/components/ui/Button"
 import Panel from "@/components/panels/Panel"
-import { useCommands } from "@/context/DataContext"
 import { useModal } from "@/context/ModalContext"
 import { Input } from "@/components/ui/Input"
-import CommandFormModal from "@/components/modals/CommandFormModal"
-import CommandItem from "@/components/panels/items/CommandItem"
 import { useSettings } from "@/context/SettingsContext"
+import { useSnippets } from "@/context/DataContext"
+import SnippetItem from "@/components/panels/items/SnippetItem"
+import SnippetFormModal from "../modals/SnippetFormModal"
 
-export type { CommandType } from "@/context/DataContext"
-
-export function CommandsPanel() {
+export function SnippetsPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
-  const { items: commands, reorder } = useCommands()
+  const { items: snippets, reorder } = useSnippets()
   const { settings } = useSettings()
 
   const { openModal } = useModal()
@@ -49,34 +47,34 @@ export function CommandsPanel() {
     }
   }, [handleSortEnd])
 
-  const filteredCommands = useMemo(() => {
-    if (searchQuery.trim() === "") return commands
-    const fuse = new Fuse(commands, {
-      keys: ["title", "code", "language"],
+  const filteredSnippets = useMemo(() => {
+    if (searchQuery.trim() === "") return snippets
+    const fuse = new Fuse(snippets, {
+      keys: ["title", "content", "language"],
       threshold: settings.fuzzySearchThreshold,
     })
     return fuse.search(searchQuery).map((result) => result.item)
-  }, [commands, searchQuery, settings.fuzzySearchThreshold])
+  }, [snippets, searchQuery, settings.fuzzySearchThreshold])
 
   const [showAll, setShowAll] = useState(false)
 
-  const displayedCommands = useMemo(() => {
+  const displayedSnippets = useMemo(() => {
     if (
       showAll ||
       settings.maxItemsPerPanel === 0 ||
       searchQuery.trim() !== ""
     ) {
-      return filteredCommands
+      return filteredSnippets
     }
-    return filteredCommands.slice(0, settings.maxItemsPerPanel)
-  }, [filteredCommands, settings.maxItemsPerPanel, showAll, searchQuery])
+    return filteredSnippets.slice(0, settings.maxItemsPerPanel)
+  }, [filteredSnippets, settings.maxItemsPerPanel, showAll, searchQuery])
 
-  const hasMoreItems = filteredCommands.length > displayedCommands.length
-  const hiddenCount = filteredCommands.length - displayedCommands.length
+  const hasMoreItems = filteredSnippets.length > displayedSnippets.length
+  const hiddenCount = filteredSnippets.length - displayedSnippets.length
 
   return (
     <Panel>
-      <CommandFormModal />
+      <SnippetFormModal />
 
       <div
         className={`flex flex-wrap items-center gap-2 ${settings.compactMode ? "sm:gap-3" : "sm:gap-4"} ${settings.compactMode ? "mb-2 sm:mb-3" : "mb-3 sm:mb-4"} flex-shrink-0`}
@@ -84,13 +82,13 @@ export function CommandsPanel() {
         <h2
           className={`font-bold ${settings.compactMode ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} flex items-center`}
         >
-          Commands
+          Snippets
         </h2>
 
         <div className="mr-auto order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
             type="text"
-            placeholder="Search commands..."
+            placeholder="Search snippets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             variant="ghost"
@@ -100,7 +98,7 @@ export function CommandsPanel() {
 
         <Button
           onClick={() => {
-            openModal("commands")
+            openModal("snippets")
           }}
           variant="secondary"
           className="order-2 sm:order-3 ml-auto sm:ml-0"
@@ -113,21 +111,21 @@ export function CommandsPanel() {
         ref={listRef}
       >
         <AnimatePresence>
-          {displayedCommands.length > 0 ? (
-            displayedCommands.map((command) => (
-              <CommandItem key={command.id} command={command} />
+          {displayedSnippets.length > 0 ? (
+            displayedSnippets.map((snippet) => (
+              <SnippetItem key={snippet.id} snippet={snippet} />
             ))
-          ) : commands.length === 0 ? (
+          ) : snippets.length === 0 ? (
             <motion.li
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0 }}
               transition={{ duration: 0.2 }}
-              key="no-commands"
+              key="no-snippets"
               className="absolute inset-0 text-[rgb(var(--muted))] flex items-center justify-center"
             >
               <Terminal size={16} className="inline mr-2" />
-              No commands added yet.
+              No snippets added yet.
             </motion.li>
           ) : (
             <motion.li
@@ -154,7 +152,7 @@ export function CommandsPanel() {
       )}
       {showAll &&
         settings.maxItemsPerPanel > 0 &&
-        filteredCommands.length > settings.maxItemsPerPanel &&
+        filteredSnippets.length > settings.maxItemsPerPanel &&
         searchQuery.trim() === "" && (
           <button
             onClick={() => setShowAll(false)}

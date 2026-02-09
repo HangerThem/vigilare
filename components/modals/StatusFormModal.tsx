@@ -2,21 +2,22 @@ import Modal from "@/components/modals/Modal"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
-import { useStatuses, StatusType, StatusState } from "@/context/DataContext"
+import { useStatuses } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
 import { nanoid } from "nanoid/non-secure"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Select } from "@/components/ui/Select"
+import { Status, StatusSchema } from "@/types/Status.type"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { State } from "@/const/State"
+import { STATUS_VARIANT_META } from "@/const/StatusVariant"
 
-enum StatusOptions {
-  WEBSITE = "WEBSITE",
-  API = "API",
-  SERVICE = "SERVICE",
-  DATABASE = "DATABASE",
-  HOST = "HOST",
+type StatusFormData = Omit<Status, "id" | "state" | "type">
+
+const defaultValues: StatusFormData = {
+  title: "",
+  url: "",
 }
-
-type StatusFormData = Omit<StatusType, "id" | "state">
 
 export default function StatusFormModal() {
   const {
@@ -30,54 +31,59 @@ export default function StatusFormModal() {
   } = useStatuses()
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("status")
+  const [variantOptions] = useState(
+    Object.values(STATUS_VARIANT_META).map((cat) => ({
+      value: cat.name.toLowerCase(),
+      label: cat.name,
+    })),
+  )
 
-  const { control, handleSubmit, reset } = useForm<StatusFormData>()
+  const { control, handleSubmit, reset } = useForm<StatusFormData>({
+    resolver: zodResolver(StatusSchema),
+    defaultValues,
+  })
 
   const handleAddStatus = async (data: StatusFormData) => {
-    const { url, title, option } = data
+    const { url, title, variant } = data
     const newStatusId = nanoid()
-    add({ id: newStatusId, url, title, option, state: "unknown" })
+    add(StatusSchema.parse({ url, title, variant }))
     closeModal()
-    const state = await fetch(url)
+    const state: State = await fetch(url)
       .then((res) => (res.ok ? "up" : "down"))
       .catch(() => "down")
+
     setStatuses((prevStatuses) =>
       prevStatuses.map((statusItem) =>
-        statusItem.id === newStatusId
-          ? { ...statusItem, state: state as StatusState }
-          : statusItem,
+        statusItem.id === newStatusId ? { ...statusItem, state } : statusItem,
       ),
     )
   }
 
-  const handleEditStatus = (data: StatusFormData) => {
-    const { url, title, option } = data
+  const handleEditStatus = async (data: StatusFormData) => {
+    const { url, title, variant } = data
     const oldStatus = statuses.find((s) => s.id === editingId)
     if (editingId) {
-      update(editingId, { url, title, option })
+      update(editingId, { url, title, variant })
     }
     setEditingId(null)
     closeModal()
     if (oldStatus && oldStatus.url !== url) {
-      fetch(url)
+      const state: State = await fetch(url)
         .then((res) => (res.ok ? "up" : "down"))
         .catch(() => "down")
-        .then((state) => {
-          setStatuses((prevStatuses) =>
-            prevStatuses.map((statusItem) =>
-              statusItem.id === editingId
-                ? { ...statusItem, state: state as StatusState }
-                : statusItem,
-            ),
-          )
-        })
+
+      setStatuses((prevStatuses) =>
+        prevStatuses.map((statusItem) =>
+          statusItem.id === editingId ? { ...statusItem, state } : statusItem,
+        ),
+      )
     }
   }
 
   useEffect(() => {
     if (!isOpen) {
       setEditingId(null)
-      reset({ url: "", title: "", option: undefined })
+      reset(defaultValues)
       return
     }
 
@@ -85,10 +91,10 @@ export default function StatusFormModal() {
       reset({
         url: editingItem.url,
         title: editingItem.title,
-        option: editingItem.option,
+        variant: editingItem.variant,
       })
     } else {
-      reset({ url: "", title: "", option: undefined })
+      reset(defaultValues)
     }
   }, [isOpen, editingItem, reset, setEditingId])
 
@@ -102,16 +108,11 @@ export default function StatusFormModal() {
         className="flex flex-col gap-2 sm:gap-3 w-full sm:w-96 md:w-120"
       >
         <Controller
-          name="option"
+          name="variant"
           control={control}
           render={({ field }) => (
             <Select
-              options={Array.from(Object.values(StatusOptions)).map(
-                (option) => ({
-                  value: option,
-                  label: option.charAt(0) + option.slice(1).toLowerCase(),
-                }),
-              )}
+              options={variantOptions}
               clearable
               value={field.value}
               placeholder="Status type"

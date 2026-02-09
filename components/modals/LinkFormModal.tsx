@@ -2,31 +2,43 @@ import Modal from "@/components/modals/Modal"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
-import { useLinks, LinkType, LinkCategory } from "@/context/DataContext"
+import { useLinks } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { nanoid } from "nanoid/non-secure"
 import { useEffect, useState } from "react"
 import { Select } from "@/components/ui/Select"
+import { Link, LinkSchema } from "@/types/Link.type"
+import { CATEGORY_META } from "@/const/Category"
+import { zodResolver } from "@hookform/resolvers/zod"
 
-type LinkFormData = Omit<LinkType, "id">
+type LinkFormData = Omit<Link, "id" | "type">
+
+const defaultValues: LinkFormData = {
+  category: "other",
+  url: "",
+  title: "",
+}
 
 export default function LinkFormModal() {
   const { add, update, editingId, setEditingId, editingItem } = useLinks()
   const [categoryOptions] = useState(
-    Object.values(LinkCategory).map((cat) => ({
-      value: cat,
-      label: cat.charAt(0) + cat.slice(1).toLowerCase(),
+    Object.values(CATEGORY_META).map((cat) => ({
+      value: cat.name.toLowerCase(),
+      label: cat.name,
     })),
   )
 
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("links")
 
-  const { control, handleSubmit, reset } = useForm<LinkFormData>()
+  const { control, handleSubmit, reset } = useForm<LinkFormData>({
+    resolver: zodResolver(LinkSchema),
+    defaultValues,
+  })
 
   const handleAddLink = (data: LinkFormData) => {
     const { category, url, title } = data
-    add({ id: nanoid(), category, url, title })
+    console.log("Adding link with data:", { category, url, title })
+    add(LinkSchema.parse({ category, url, title }))
     closeModal()
   }
 
@@ -42,7 +54,7 @@ export default function LinkFormModal() {
   useEffect(() => {
     if (!isOpen) {
       setEditingId(null)
-      reset({ category: LinkCategory.OTHER, url: "", title: "" })
+      reset(defaultValues)
       return
     }
 
@@ -53,7 +65,7 @@ export default function LinkFormModal() {
         title: editingItem.title,
       })
     } else {
-      reset({ category: LinkCategory.OTHER, url: "", title: "" })
+      reset(defaultValues)
     }
   }, [isOpen, editingItem, reset, setEditingId])
 
@@ -72,7 +84,6 @@ export default function LinkFormModal() {
         <Controller
           name="category"
           control={control}
-          defaultValue={LinkCategory.OTHER}
           rules={{ required: true }}
           render={({ field }) => (
             <Select

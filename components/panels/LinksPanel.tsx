@@ -14,8 +14,6 @@ import { Input } from "@/components/ui/Input"
 import LinkItem from "@/components/panels/items/LinkItem"
 import { useSettings } from "@/context/SettingsContext"
 
-export type { LinkCategory, LinkType } from "@/context/DataContext"
-
 export function LinksPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)

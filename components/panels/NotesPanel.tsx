@@ -14,8 +14,6 @@ import { Input } from "@/components/ui/Input"
 import NoteItem from "@/components/panels/items/NoteItem"
 import { useSettings } from "@/context/SettingsContext"
 
-export type { NoteCategory, NoteType } from "@/context/DataContext"
-
 export function NotesPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)

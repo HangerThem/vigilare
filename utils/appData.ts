@@ -11,11 +11,12 @@ import { notifyAllStorageListeners } from "@/hook/useLocalStorageState"
  * @constant
  */
 const SETTINGS_KEY = "appSettings"
+
 /**
  * The keys used for storing main app data in localStorage.
  * @constant
  */
-const DATA_KEYS = ["commands", "links", "notes", "status"]
+const DATA_KEYS = ["links", "notes", "snippets", "statuses"]
 
 /**
  * Safely parses a JSON string, returning the original value if parsing fails.
@@ -132,7 +133,9 @@ export function importSettings(data: Record<string, unknown>): void {
  * Triggers a download of the exported app data as a JSON file.
  * @param {string} [filename="vigilare-backup.json"] - The filename for the downloaded file.
  */
-export function downloadAppData(filename: string = "vigilare-backup.json"): void {
+export function downloadAppData(
+  filename: string = "vigilare-backup.json",
+): void {
   const data = exportAppData()
   const blob = new Blob([data], { type: "application/json" })
   const url = URL.createObjectURL(blob)
@@ -149,7 +152,9 @@ export function downloadAppData(filename: string = "vigilare-backup.json"): void
  * Triggers a download of the exported settings as a JSON file.
  * @param {string} [filename="vigilare-settings.json"] - The filename for the downloaded file.
  */
-export function downloadSettings(filename: string = "vigilare-settings.json"): void {
+export function downloadSettings(
+  filename: string = "vigilare-settings.json",
+): void {
   const data = exportSettings()
   const blob = new Blob([data], { type: "application/json" })
   const url = URL.createObjectURL(blob)

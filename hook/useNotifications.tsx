@@ -8,8 +8,9 @@ import {
   useSyncExternalStore,
 } from "react"
 import { useLocalStorageState } from "@/hook/useLocalStorageState"
-import { StatusType } from "@/context/DataContext"
 import { useOnline } from "@/hook/useOnline"
+import { Status } from "@/types/Status.type"
+import { State } from "@/const/State"
 
 export type NotificationPermission = "default" | "granted" | "denied"
 
@@ -21,8 +22,8 @@ export interface UseNotificationsReturn {
   checkInterval: number
   setCheckInterval: (interval: number) => void
   requestPermission: () => Promise<boolean>
-  startMonitoring: (statuses: StatusType[]) => void
-  updateStatuses: (statuses: StatusType[]) => void
+  startMonitoring: (statuses: Status[]) => void
+  updateStatuses: (statuses: Status[]) => void
   stopMonitoring: () => void
   enableNotifications: () => Promise<boolean>
   disableNotifications: () => void
@@ -40,7 +41,7 @@ const getPermission = (): NotificationPermission =>
     : "default"
 const getServerPermission = (): NotificationPermission => "default"
 
-async function checkStatus(status: StatusType): Promise<"up" | "down"> {
+async function checkStatus(status: Status): Promise<"up" | "down"> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
@@ -63,7 +64,7 @@ async function checkStatus(status: StatusType): Promise<"up" | "down"> {
 }
 
 export function useNotifications(
-  onStatusUpdate?: (statuses: StatusType[]) => void,
+  onStatusUpdate?: (statuses: Status[]) => void,
 ): UseNotificationsReturn {
   const isOnline = useOnline()
 
@@ -87,7 +88,7 @@ export function useNotifications(
 
   const swRegistration = useRef<ServiceWorkerRegistration | null>(null)
   const onStatusUpdateRef = useRef(onStatusUpdate)
-  const statusesRef = useRef<StatusType[]>([])
+  const statusesRef = useRef<Status[]>([])
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -126,9 +127,9 @@ export function useNotifications(
 
   const showNotification = useCallback(
     async (
-      status: StatusType,
-      previousState: "up" | "down" | "unknown",
-      newState: "up" | "down",
+      status: Status,
+      previousState: State,
+      newState: Omit<State, "unknown">,
     ) => {
       if (Notification.permission !== "granted") return
       if (!swRegistration.current) return
@@ -171,7 +172,7 @@ export function useNotifications(
       return
     }
 
-    const updatedStatuses: StatusType[] = []
+    const updatedStatuses: Status[] = []
 
     for (const status of statuses) {
       const newState = await checkStatus(status)
@@ -241,7 +242,7 @@ export function useNotifications(
   }, [setNotificationsEnabled])
 
   const startMonitoring = useCallback(
-    (statuses: StatusType[]) => {
+    (statuses: Status[]) => {
       statusesRef.current = statuses
 
       const wasMonitoring = isMonitoring
@@ -255,7 +256,7 @@ export function useNotifications(
     [checkInterval, performCheck, isMonitoring],
   )
 
-  const updateStatuses = useCallback((statuses: StatusType[]) => {
+  const updateStatuses = useCallback((statuses: Status[]) => {
     statusesRef.current = statuses
   }, [])
 

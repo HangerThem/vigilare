@@ -4,51 +4,10 @@ import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import { createContext, useContext, useState, useCallback } from "react"
 import { useConfirmDialog } from "@/context/ConfirmDialogContext"
 import { useSettings } from "@/context/SettingsContext"
-
-export type CommandType = {
-  id: string
-  code: string
-  title: string
-  language: string
-}
-
-export enum LinkCategory {
-  WORK = "WORK",
-  PERSONAL = "PERSONAL",
-  STUDY = "STUDY",
-  OTHER = "OTHER",
-}
-
-export type LinkType = {
-  id: string
-  category: LinkCategory
-  url: string
-  title: string
-}
-
-export enum NoteCategory {
-  WORK = "WORK",
-  PERSONAL = "PERSONAL",
-  STUDY = "STUDY",
-  OTHER = "OTHER",
-}
-
-export type NoteType = {
-  id: string
-  category: NoteCategory
-  title: string
-  content: string
-}
-
-export type StatusState = "up" | "down" | "unknown"
-
-export type StatusType = {
-  id: string
-  url: string
-  title: string
-  option?: string
-  state: StatusState
-}
+import { Snippet } from "@/types/Snippet.type"
+import { Link } from "@/types/Link.type"
+import { Note } from "@/types/Note.type"
+import { Status } from "@/types/Status.type"
 
 interface DataManager<T extends { id: string }> {
   items: T[]
@@ -64,10 +23,10 @@ interface DataManager<T extends { id: string }> {
 }
 
 interface DataContextType {
-  commands: DataManager<CommandType>
-  links: DataManager<LinkType>
-  notes: DataManager<NoteType>
-  statuses: DataManager<StatusType>
+  snippets: DataManager<Snippet>
+  links: DataManager<Link>
+  notes: DataManager<Note>
+  statuses: DataManager<Status>
 }
 
 const DataContext = createContext<DataContextType | null>(null)
@@ -161,33 +120,33 @@ function useDataManager<T extends { id: string }>(
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const commands = useDataManager<CommandType>(
-    "commands",
+  const snippets = useDataManager<Snippet>(
+    "snippets",
     [],
-    "Delete Command",
-    "Are you sure you want to delete this command?",
+    "Delete Snippet",
+    "Are you sure you want to delete this snippet?",
   )
-  const links = useDataManager<LinkType>(
+  const links = useDataManager<Link>(
     "links",
     [],
     "Delete Link",
     "Are you sure you want to delete this link?",
   )
-  const notes = useDataManager<NoteType>(
+  const notes = useDataManager<Note>(
     "notes",
     [],
     "Delete Note",
     "Are you sure you want to delete this note?",
   )
-  const statuses = useDataManager<StatusType>(
-    "status",
+  const statuses = useDataManager<Status>(
+    "statuses",
     [],
     "Delete Status",
     "Are you sure you want to delete this status?",
   )
 
   return (
-    <DataContext.Provider value={{ commands, links, notes, statuses }}>
+    <DataContext.Provider value={{ snippets, links, notes, statuses }}>
       {children}
     </DataContext.Provider>
   )
@@ -201,9 +160,9 @@ export function useData() {
   return context
 }
 
-export function useCommands() {
-  const { commands } = useData()
-  return commands
+export function useSnippets() {
+  const { snippets } = useData()
+  return snippets
 }
 
 export function useLinks() {

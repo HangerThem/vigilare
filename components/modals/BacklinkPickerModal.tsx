@@ -6,28 +6,16 @@ import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { useData } from "@/context/DataContext"
 import { motion, AnimatePresence } from "framer-motion"
-
-export type BacklinkTargetType = "note" | "link" | "command" | "status"
+import Fuse from "fuse.js"
+import { Item } from "@/types/Item.type"
+import { useSettings } from "@/context/SettingsContext"
+import { ITEM_TYPE_META, ItemType } from "@/const/ItemType"
 
 export type BacklinkTarget = {
-  type: BacklinkTargetType
+  type: ItemType
   id: string
   title: string
   subtitle?: string
-}
-
-const TYPE_LABELS: Record<BacklinkTargetType, string> = {
-  note: "Note",
-  link: "Link",
-  command: "Command",
-  status: "Status",
-}
-
-const TYPE_STYLES: Record<BacklinkTargetType, string> = {
-  note: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-  link: "bg-green-500/10 text-green-500 border-green-500/30",
-  command: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-  status: "bg-purple-500/10 text-purple-500 border-purple-500/30",
 }
 
 interface BacklinkPickerModalProps {
@@ -41,51 +29,61 @@ export default function BacklinkPickerModal({
   onClose,
   onPick,
 }: BacklinkPickerModalProps) {
-  const { notes, links, commands, statuses } = useData()
+  const { notes, links, snippets, statuses } = useData()
   const [query, setQuery] = useState("")
+  const { settings } = useSettings()
 
-  const items = useMemo<BacklinkTarget[]>(() => {
-    return [
-      ...notes.items.map((note) => ({
-        type: "note" as const,
-        id: note.id,
-        title: note.title,
-      })),
-      ...links.items.map((link) => ({
-        type: "link" as const,
-        id: link.id,
-        title: link.title,
-      })),
-      ...commands.items.map((command) => ({
-        type: "command" as const,
-        id: command.id,
-        title: command.title,
-      })),
-      ...statuses.items.map((status) => ({
-        type: "status" as const,
-        id: status.id,
-        title: status.title,
-      })),
-    ]
-  }, [notes.items, links.items, commands.items, statuses.items])
+  const allItems: Item[] = useMemo(
+    () => [
+      ...links.items,
+      ...notes.items,
+      ...snippets.items,
+      ...statuses.items,
+    ],
+    [links.items, notes.items, snippets.items, statuses.items],
+  )
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return items
-    const q = query.toLowerCase()
-    return items.filter((item) => {
-      return (
-        item.title.toLowerCase().includes(q) ||
-        (item.subtitle?.toLowerCase().includes(q) ?? false) ||
-        TYPE_LABELS[item.type].toLowerCase().includes(q)
+  const filtered: Item[] = useMemo(() => {
+    if (!open) return []
+    let effectiveQuery = query.trim()
+    if (effectiveQuery === "") return allItems
+
+    const typeMatch = effectiveQuery.match(/^@(\w+)\s*/i)
+    let typeFilter: ItemType | undefined
+    if (typeMatch) {
+      const typeStr = typeMatch[1].toLowerCase()
+      const labelMatch = Object.entries(ITEM_TYPE_META).find(
+        ([, meta]) => meta.label.toLowerCase() === typeStr,
       )
+      typeFilter =
+        (Object.keys(ITEM_TYPE_META) as ItemType[]).find(
+          (type) => type === typeStr,
+        ) ?? (labelMatch?.[0] as ItemType | undefined)
+      effectiveQuery = effectiveQuery.slice(typeMatch[0].length)
+    }
+
+    if (effectiveQuery === "" && !typeFilter) {
+      return []
+    }
+
+    let items = allItems
+    if (typeFilter) {
+      items = items.filter((item) => item.type === typeFilter)
+    }
+
+    if (effectiveQuery === "") return items
+
+    const fuse = new Fuse(items, {
+      keys: ["url", "code", "title", "content"],
+      threshold: settings.fuzzySearchThreshold,
     })
-  }, [items, query])
+
+    return fuse.search(effectiveQuery).map((result) => result.item)
+  }, [open, query, allItems, settings.fuzzySearchThreshold])
 
   useEffect(() => {
     const handleClose = () => {
-      if (!open) {
-        setQuery("")
-      }
+      if (!open) setQuery("")
     }
 
     handleClose()
@@ -142,7 +140,7 @@ export default function BacklinkPickerModal({
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search notes, links, commands, statuses..."
+                placeholder="Search links, notes, commands, statuses..."
                 autoFocus
               />
             </div>
@@ -150,7 +148,7 @@ export default function BacklinkPickerModal({
             <div className="max-h-64 sm:max-h-80 overflow-auto space-y-2">
               {filtered.length === 0 && (
                 <div className="text-sm text-[rgb(var(--muted))]">
-                  No matching items.
+                  No results found.
                 </div>
               )}
 
@@ -158,14 +156,21 @@ export default function BacklinkPickerModal({
                 <button
                   key={`${item.type}:${item.id}`}
                   type="button"
-                  onClick={() => onPick(item)}
+                  onClick={() =>
+                    onPick({
+                      type: item.type,
+                      id: item.id,
+                      title: item.title,
+                      subtitle: "content" in item ? item.content : undefined,
+                    })
+                  }
                   className="w-full text-left rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--background))] p-2 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[item.type]}`}
+                      className={`text-xs px-2 py-0.5 rounded-full border ${ITEM_TYPE_META[item.type].style}`}
                     >
-                      {TYPE_LABELS[item.type]}
+                      {ITEM_TYPE_META[item.type].label}
                     </span>
                     <span className="font-medium text-sm truncate">
                       {item.title}

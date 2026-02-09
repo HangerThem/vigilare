@@ -9,7 +9,7 @@ import Fuse from "fuse.js"
 import { Button } from "@/components/ui/Button"
 import Panel from "@/components/panels/Panel"
 import StatusFormModal from "@/components/modals/StatusFormModal"
-import { useStatuses, StatusType } from "@/context/DataContext"
+import { useStatuses } from "@/context/DataContext"
 import { useModal } from "@/context/ModalContext"
 import { useNotifications } from "@/hook/useNotifications"
 import { Select } from "@/components/ui/Select"
@@ -17,13 +17,12 @@ import { Input } from "@/components/ui/Input"
 import { useOnline } from "@/hook/useOnline"
 import StatusItem from "@/components/panels/items/StatusItem"
 import { useSettings } from "@/context/SettingsContext"
-
-export type { StatusState, StatusType } from "@/context/DataContext"
+import { Status } from "@/types/Status.type"
 
 export function StatusPanel() {
   const listRef = useRef<HTMLDivElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
-  const statusesRef = useRef<StatusType[]>([])
+  const statusesRef = useRef<Status[]>([])
   const {
     items: statuses,
     reorder,
@@ -36,7 +35,7 @@ export function StatusPanel() {
   const { settings } = useSettings()
 
   const handleStatusUpdateFromSW = useCallback(
-    (updatedStatuses: StatusType[]) => {
+    (updatedStatuses: Status[]) => {
       setStatuses(updatedStatuses)
     },
     [setStatuses],
