@@ -39,8 +39,7 @@ const TYPE_LABELS: Record<ResultType, string> = {
 const TYPE_STYLES: Record<ResultType, string> = {
   [ResultType.NOTE]: "bg-blue-500/10 text-blue-500 border-blue-500/30",
   [ResultType.LINK]: "bg-green-500/10 text-green-500 border-green-500/30",
-  [ResultType.COMMAND]:
-    "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
+  [ResultType.COMMAND]: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
   [ResultType.STATUS]: "bg-purple-500/10 text-purple-500 border-purple-500/30",
 }
 
@@ -60,12 +59,22 @@ export default function GlobalSearchModal() {
       return []
     }
 
-    const effectiveQuery = query.trim()
+    let effectiveQuery = query.trim()
     if (effectiveQuery === "") {
       return []
     }
 
-    const allItems: SearchResult[] = [
+    const typeMatch = effectiveQuery.match(/^@(\w+)\s*/i)
+    let typeFilter: ResultType | undefined
+    if (typeMatch) {
+      const typeStr = typeMatch[1].toLowerCase()
+      typeFilter = Object.values(ResultType).find((t) => t === typeStr) as
+        | ResultType
+        | undefined
+      effectiveQuery = effectiveQuery.slice(typeMatch[0].length)
+    }
+
+    let allItems: SearchResult[] = [
       ...links.map((link) => ({ type: ResultType.LINK, item: link })),
       ...notes.map((note) => ({ type: ResultType.NOTE, item: note })),
       ...commands.map((command) => ({
@@ -78,14 +87,16 @@ export default function GlobalSearchModal() {
       })),
     ]
 
+    if (typeFilter) {
+      allItems = allItems.filter((item) => item.type === typeFilter)
+    }
+
+    if (effectiveQuery === "") {
+      return allItems
+    }
+
     const fuse = new Fuse(allItems, {
-      keys: [
-        "item.url",
-        "item.code",
-        "item.title",
-        "item.content",
-        "type",
-      ],
+      keys: ["item.url", "item.code", "item.title", "item.content"],
       threshold: settings.fuzzySearchThreshold,
     })
 
@@ -195,9 +206,7 @@ export default function GlobalSearchModal() {
                       {TYPE_LABELS[result.type]}
                     </span>
                     <span className="font-medium text-sm truncate">
-                      {"title" in result.item
-                        ? result.item.title
-                        : "Untitled"}
+                      {"title" in result.item ? result.item.title : "Untitled"}
                     </span>
                   </div>
                   {getSubtitle(result) && (
