@@ -6,6 +6,8 @@ import LinkWithSettings from "@/components/common/LinkWithSettings"
 import { useSettings } from "@/context/SettingsContext"
 import { Link } from "@/types/Link.type"
 import { CATEGORY_META } from "@/const/Category"
+import { useEffect, useState } from "react"
+import Image from "next/image"
 
 interface LinkItemProps {
   link: Link
@@ -15,8 +17,22 @@ export default function LinkItem({ link }: LinkItemProps) {
   const { setEditingId, remove } = useLinks()
   const { openModal } = useModal()
   const { settings } = useSettings()
+  const [faviconUrl, setFaviconUrl] = useState("")
 
   const compact = settings.compactMode
+
+  useEffect(() => {
+    const getFavicon = () => {
+      try {
+        const url = new URL(link.url)
+        setFaviconUrl(`/favicon?domain=${url.hostname}`)
+      } catch (e) {
+        setFaviconUrl("")
+      }
+    }
+
+    getFavicon()
+  }, [link.url])
 
   return (
     <motion.li
@@ -63,7 +79,17 @@ export default function LinkItem({ link }: LinkItemProps) {
         />
 
         <div className="mr-auto min-w-0 flex-1">
-          <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
+          <span className={`flex items-center gap-1 block font-medium ${compact ? "text-sm" : ""}`}>
+            {faviconUrl && (
+              <Image
+                src={faviconUrl}
+                alt="favicon"
+                width={16}
+                height={16}
+                className="inline mr-1"
+                onError={() => setFaviconUrl("")}
+              />
+            )}
             {link.title}
           </span>
           {!compact && (

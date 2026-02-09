@@ -39,6 +39,21 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: "/favicon",
+        destination: "/api/favicon",
+      },
+    ]
+  },
+  images: {
+    localPatterns: [
+      {
+        pathname: "/favicon/**",
+      },
+    ],
+  },
 }
 
 export default nextConfig
