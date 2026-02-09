@@ -7,10 +7,7 @@ import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
 import { useTheme } from "@/context/ThemeContext"
 import {
-  ClipboardCopy,
   Download,
-  FileDown,
-  FileUp,
   Import,
   Link,
   Network,
@@ -18,11 +15,10 @@ import {
   PaintRoller,
   Search,
   Settings,
-  Share,
   SquareSlash,
   Terminal,
 } from "lucide-react"
-import { downloadAppData, exportState, importAppData } from "@/utils/appData"
+import { downloadAppData, importAppDataFile } from "@/utils/appData"
 import { useSettings } from "@/context/SettingsContext"
 
 interface CommandBase {
@@ -111,54 +107,20 @@ export default function CommandPaletteModal() {
         },
       },
       {
-        type: "commands",
+        type: "action",
         icon: <Import size={16} />,
         name: "Import Data",
-        commands: [
-          {
-            type: "action",
-            icon: <FileUp size={16} />,
-            name: "Import from JSON",
-            action: () => {
-              importAppData()
-            },
-          },
-          {
-            type: "action",
-            icon: <ClipboardCopy size={16} />,
-            name: "Import from Text",
-            action: () => {
-              openModal("importFromText")
-            },
-          },
-        ],
+        action: () => {
+          importAppDataFile()
+        },
       },
       {
-        type: "commands",
+        type: "action",
         icon: <Download size={16} />,
         name: "Export Data",
-        commands: [
-          {
-            type: "action",
-            icon: <FileDown size={16} />,
-            name: "Export as JSON",
-            action: () => {
-              downloadAppData()
-            },
-          },
-          {
-            type: "action",
-            icon: <ClipboardCopy size={16} />,
-            name: "Copy to Clipboard",
-            action: () => {
-              navigator.clipboard
-                .writeText(exportState(localStorage))
-                .catch((err) => {
-                  console.error("Failed to copy data to clipboard", err)
-                })
-            },
-          },
-        ],
+        action: () => {
+          downloadAppData()
+        },
       },
       {
         type: "commands",
@@ -172,14 +134,6 @@ export default function CommandPaletteModal() {
             setTheme(themeOption)
           },
         })),
-      },
-      {
-        type: "action",
-        icon: <Share size={16} />,
-        name: "Share Dashboard",
-        action: () => {
-          openModal("shareDashboard")
-        },
       },
     ]
 

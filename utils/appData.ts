@@ -1,9 +1,28 @@
+/**
+ * Utility functions for exporting, importing, downloading, and normalizing application data and settings
+ * for the Vigilare app, using localStorage as the data store.
+ *
+ * @module appDataUtils
+ */
 import { notifyAllStorageListeners } from "@/hook/useLocalStorageState"
-import { deflate, inflate } from "pako"
 
-const KEYS = ["commands", "links", "notes", "status"]
+/**
+ * The key used for storing settings in localStorage.
+ * @constant
+ */
+const SETTINGS_KEY = "settings"
+/**
+ * The keys used for storing main app data in localStorage.
+ * @constant
+ */
+const DATA_KEYS = ["commands", "links", "notes", "status"]
 
-function safeParse(value: string | null): unknown {
+/**
+ * Safely parses a JSON string, returning the original value if parsing fails.
+ * @param {string | null} value - The value to parse.
+ * @returns {unknown} The parsed value, or the original value if parsing fails.
+ */
+export function safeParse(value: string | null): unknown {
   if (value === null) return null
 
   try {
@@ -13,7 +32,12 @@ function safeParse(value: string | null): unknown {
   }
 }
 
-function normalizeValue(value: unknown): unknown {
+/**
+ * Normalizes a value from string to its appropriate type (boolean, null, object, etc.).
+ * @param {unknown} value - The value to normalize.
+ * @returns {unknown} The normalized value.
+ */
+export function normalizeValue(value: unknown): unknown {
   if (typeof value !== "string") return value
 
   if (value === "true") return true
@@ -27,7 +51,12 @@ function normalizeValue(value: unknown): unknown {
   }
 }
 
-function normalizeObject(
+/**
+ * Normalizes all values in an object using normalizeValue.
+ * @param {Record<string, unknown>} obj - The object to normalize.
+ * @returns {Record<string, unknown>} The normalized object.
+ */
+export function normalizeObject(
   obj: Record<string, unknown>,
 ): Record<string, unknown> {
   const normalized: Record<string, unknown> = {}
@@ -39,18 +68,14 @@ function normalizeObject(
   return normalized
 }
 
-function uint8ToBase64(u8: Uint8Array): string {
-  return btoa(String.fromCharCode(...u8))
-}
-
-function base64ToUint8(b64: string): Uint8Array {
-  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
-}
-
+/**
+ * Exports all main app data from localStorage as a formatted JSON string.
+ * @returns {string} The exported app data as a JSON string.
+ */
 export function exportAppData(): string {
   const data: Record<string, unknown> = {}
 
-  for (const key of KEYS) {
+  for (const key of DATA_KEYS) {
     const value = localStorage.getItem(key)
     if (value !== null) {
       data[key] = safeParse(value)
@@ -60,7 +85,23 @@ export function exportAppData(): string {
   return JSON.stringify(data, null, 2)
 }
 
-export function importAllAppData(data: Record<string, unknown>): void {
+/**
+ * Exports settings from localStorage as a JSON string.
+ * @returns {string} The exported settings as a JSON string.
+ */
+export function exportSettings(): string {
+  const value = localStorage.getItem(SETTINGS_KEY)
+  if (value === null) {
+    return "{}"
+  }
+  return value
+}
+
+/**
+ * Imports app data into localStorage and notifies listeners.
+ * @param {Record<string, unknown>} data - The app data to import.
+ */
+export function importAppData(data: Record<string, unknown>): void {
   for (const [key, value] of Object.entries(data)) {
     localStorage.setItem(key, JSON.stringify(value))
   }
@@ -68,7 +109,30 @@ export function importAllAppData(data: Record<string, unknown>): void {
   notifyAllStorageListeners()
 }
 
-export function downloadAppData(filename = "vigilare-backup.json"): void {
+/**
+ * Imports settings into localStorage, merging with existing settings, and notifies listeners.
+ * @param {Record<string, unknown>} data - The settings data to import.
+ */
+export function importSettings(data: Record<string, unknown>): void {
+  const settings = localStorage.getItem(SETTINGS_KEY)
+  const currentSettings: Record<string, unknown> = settings
+    ? (safeParse(settings) as Record<string, unknown>)
+    : {}
+
+  const newSettings = {
+    ...currentSettings,
+    ...data,
+  }
+
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings))
+  notifyAllStorageListeners()
+}
+
+/**
+ * Triggers a download of the exported app data as a JSON file.
+ * @param {string} [filename="vigilare-backup.json"] - The filename for the downloaded file.
+ */
+export function downloadAppData(filename: string = "vigilare-backup.json"): void {
   const data = exportAppData()
   const blob = new Blob([data], { type: "application/json" })
   const url = URL.createObjectURL(blob)
@@ -81,7 +145,28 @@ export function downloadAppData(filename = "vigilare-backup.json"): void {
   URL.revokeObjectURL(url)
 }
 
-export function importAppData(): void {
+/**
+ * Triggers a download of the exported settings as a JSON file.
+ * @param {string} [filename="vigilare-settings.json"] - The filename for the downloaded file.
+ */
+export function downloadSettings(filename: string = "vigilare-settings.json"): void {
+  const data = exportSettings()
+  const blob = new Blob([data], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+
+  URL.revokeObjectURL(url)
+}
+
+/**
+ * Prompts the user to select a JSON file and imports its contents as app data.
+ * Reloads the page after successful import.
+ */
+export function importAppDataFile(): void {
   const fileInput = document.createElement("input")
   fileInput.type = "file"
   fileInput.accept = ".json"
@@ -101,7 +186,7 @@ export function importAppData(): void {
         const raw = JSON.parse(text)
         const normalized = normalizeObject(raw)
 
-        importAllAppData(normalized)
+        importAppData(normalized)
         window.location.reload()
       } catch {
         console.error("Invalid Vigilare backup file")
@@ -121,64 +206,44 @@ export function importAppData(): void {
   fileInput.click()
 }
 
-export function exportState(data: Record<string, unknown>): string {
-  const json = JSON.stringify(data)
-  const compressed = deflate(json)
-  return uint8ToBase64(compressed)
-}
+/**
+ * Prompts the user to select a JSON file and imports its contents as settings.
+ */
+export function importSettingsFile(): void {
+  const fileInput = document.createElement("input")
+  fileInput.type = "file"
+  fileInput.accept = ".json"
 
-export function importState(encoded: string): Record<string, unknown> | null {
-  try {
-    const bytes = base64ToUint8(encoded)
-    const json = inflate(bytes, { to: "string" })
-    const raw = JSON.parse(json)
-    return normalizeObject(raw)
-  } catch (err) {
-    console.error("Invalid encoded Vigilare payload", err)
-    return null
-  }
-}
+  fileInput.onchange = () => {
+    const file = fileInput.files?.[0]
+    if (!file) {
+      fileInput.remove()
+      return
+    }
 
-export function importAppDataFromEncoded(encoded: string): void {
-  try {
-    const bytes = base64ToUint8(encoded)
-    const json = inflate(bytes, { to: "string" })
-    const raw = JSON.parse(json)
-    const normalized = normalizeObject(raw)
+    const reader = new FileReader()
 
-    importAllAppData(normalized)
-    window.location.reload()
-  } catch (err) {
-    console.error("Invalid encoded Vigilare payload", err)
-  }
-}
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string
+        const raw = JSON.parse(text)
+        const normalized = normalizeObject(raw)
 
-export function mergeAppDataFromEncoded(encoded: string): void {
-  try {
-    const existingData: Record<string, unknown> = {}
-    for (const key of KEYS) {
-      const value = localStorage.getItem(key)
-      if (value !== null) {
-        existingData[key] = safeParse(value)
+        importSettings(normalized)
+      } catch {
+        console.error("Invalid Vigilare settings file")
+      } finally {
+        fileInput.remove()
       }
     }
 
-    const bytes = base64ToUint8(encoded)
-    const json = inflate(bytes, { to: "string" })
-    const raw = JSON.parse(json)
-    const normalized = normalizeObject(raw)
+    reader.onerror = () => {
+      console.error("Failed to read file")
+      fileInput.remove()
+    }
 
-    const mergedData = { ...existingData, ...normalized }
-
-    importAllAppData(mergedData)
-    window.location.reload()
-  } catch (err) {
-    console.error("Invalid encoded Vigilare payload", err)
+    reader.readAsText(file)
   }
-}
 
-export function dataExists(): boolean {
-  return KEYS.map((key) => localStorage.getItem(key)).some(
-    (value) => value !== null && value !== "[]",
-  )
+  fileInput.click()
 }

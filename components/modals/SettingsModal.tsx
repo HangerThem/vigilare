@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react"
 import Toggle from "@/components/ui/Toggle"
 import { Command, RotateCcw } from "lucide-react"
 import { ShortcutName } from "@/context/SettingsContext"
+import { downloadSettings, importSettingsFile } from "@/utils/appData"
 
 const MODIFIER_KEYS = ["Shift", "Control", "Meta", "Alt"]
 
@@ -66,7 +67,7 @@ export default function SettingsModal() {
     isShortcutChanged,
   } = useSettings()
   const [activeTab, setActiveTab] = useState<
-    "appearance" | "behavior" | "data" | "shortcuts"
+    "appearance" | "behavior" | "data" | "shortcuts" | "advanced"
   >("appearance")
   const [editingShortcut, setEditingShortcut] = useState<ShortcutName | null>(
     null,
@@ -105,6 +106,7 @@ export default function SettingsModal() {
     { id: "behavior" as const, label: "Behavior" },
     { id: "data" as const, label: "Data" },
     { id: "shortcuts" as const, label: "Shortcuts" },
+    { id: "advanced" as const, label: "Advanced" },
   ]
 
   useEffect(() => {
@@ -207,7 +209,7 @@ export default function SettingsModal() {
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {activeTab === "appearance" && (
             <>
               <SettingSection title="Display">
@@ -215,16 +217,19 @@ export default function SettingsModal() {
                   checked={settings.compactMode}
                   onChange={(v) => updateSetting("compactMode", v)}
                   label="Compact mode"
+                  description="Reduce spacing and font size for a denser layout."
                 />
                 <Toggle
                   checked={settings.showAnimations}
                   onChange={(v) => updateSetting("showAnimations", v)}
                   label="Enable animations"
+                  description="Smooth transitions and subtle effects."
                 />
                 <Toggle
                   checked={settings.showOfflineIndicator}
                   onChange={(v) => updateSetting("showOfflineIndicator", v)}
                   label="Show offline indicator"
+                  description="Display a banner when offline."
                 />
               </SettingSection>
             </>
@@ -237,17 +242,21 @@ export default function SettingsModal() {
                   checked={settings.confirmBeforeDelete}
                   onChange={(v) => updateSetting("confirmBeforeDelete", v)}
                   label="Confirm before deleting items"
+                  description="Show a confirmation dialog before deleting."
                 />
                 <Toggle
                   checked={settings.openLinksInNewTab}
                   onChange={(v) => updateSetting("openLinksInNewTab", v)}
                   label="Open links in new tab"
+                  description="External links will open in a new browser tab."
                 />
               </SettingSection>
 
               <SettingSection title="Search">
                 <div className="space-y-2">
-                  <label className="text-sm">Search sensitivity</label>
+                  <label className="text-sm font-medium">
+                    Search sensitivity
+                  </label>
                   <Select
                     options={[
                       { value: 0.1, label: "Strict" },
@@ -259,6 +268,9 @@ export default function SettingsModal() {
                       updateSetting("fuzzySearchThreshold", v as number)
                     }
                   />
+                  <div className="text-xs text-[rgb(var(--muted))]">
+                    Controls how closely results must match your query.
+                  </div>
                 </div>
               </SettingSection>
             </>
@@ -271,10 +283,13 @@ export default function SettingsModal() {
                   checked={settings.autoBackupEnabled}
                   onChange={(v) => updateSetting("autoBackupEnabled", v)}
                   label="Enable automatic backups"
+                  description="Automatically backup your data at regular intervals."
                 />
                 {settings.autoBackupEnabled && (
                   <div className="space-y-2">
-                    <label className="text-sm">Backup interval (days)</label>
+                    <label className="text-sm font-medium">
+                      Backup interval (days)
+                    </label>
                     <Input
                       type="number"
                       min={1}
@@ -287,14 +302,18 @@ export default function SettingsModal() {
                         )
                       }
                     />
+                    <div className="text-xs text-[rgb(var(--muted))]">
+                      How often to create automatic backups.
+                    </div>
                   </div>
                 )}
               </SettingSection>
 
               <SettingSection title="Limits">
                 <div className="space-y-2">
-                  <label className="text-sm">
-                    Max items per panel (0 = unlimited)
+                  <label className="text-sm font-medium">
+                    Max items per panel{" "}
+                    <span className="text-xs">(0 = unlimited)</span>
                   </label>
                   <Input
                     type="number"
@@ -308,6 +327,9 @@ export default function SettingsModal() {
                       )
                     }
                   />
+                  <div className="text-xs text-[rgb(var(--muted))]">
+                    Prevents panels from growing too large.
+                  </div>
                 </div>
               </SettingSection>
             </>
@@ -315,7 +337,6 @@ export default function SettingsModal() {
 
           {activeTab === "shortcuts" && (
             <>
-              {/* Fixed-height container: messages consume space, list flexes */}
               <div className="h-60 sm:h-80 md:h-96 flex flex-col gap-3">
                 {(validationError || shortcutConflict) && (
                   <div className="space-y-2" aria-live="polite">
@@ -388,13 +409,13 @@ export default function SettingsModal() {
                   Click a shortcut to edit, then press the new key combo.
                   {editingShortcut && (
                     <span className="block mt-1">
-                      Press to cancel or{" "}
-                      <span className="font-medium">Backspace</span> to clear.
+                      Press <span className="font-medium">Esc</span> to cancel
+                      or <span className="font-medium">Backspace</span> to
+                      clear.
                     </span>
                   )}
                 </div>
 
-                {/* Scrollable shortcut list only */}
                 <div className="space-y-2 flex-1 overflow-y-auto pr-2">
                   {(
                     Object.entries(settings.shortcuts) as [
@@ -427,6 +448,7 @@ export default function SettingsModal() {
                             ? "border-[rgb(var(--primary))] bg-[rgb(var(--muted-background))]"
                             : "border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))]"
                         }`}
+                        aria-label={`Edit shortcut for ${shortcut.designation}`}
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex items-center justify-between gap-2">
@@ -443,6 +465,7 @@ export default function SettingsModal() {
                                   resetShortcut(name)
                                   clearEditingMessages()
                                 }}
+                                aria-label="Reset to default"
                               >
                                 <RotateCcw
                                   size={14}
@@ -490,16 +513,43 @@ export default function SettingsModal() {
               </div>
             </>
           )}
-        </div>
 
-        <div className="flex justify-between mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-[rgb(var(--border))]">
-          <Button
-            variant="secondary"
-            onClick={resetSettings}
-            className="text-sm sm:text-base"
-          >
-            Reset to Defaults
-          </Button>
+          {activeTab === "advanced" && (
+            <>
+              <div className="space-y-2">
+                <h2 className="font-semibold text-sm text-[rgb(var(--muted))] uppercase tracking-wide">
+                  Data Management
+                </h2>
+                <Button
+                  variant="secondary"
+                  onClick={() => downloadSettings()}
+                  className="text-sm sm:text-base"
+                >
+                  Export Settings
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={importSettingsFile}
+                  className="text-sm sm:text-base"
+                >
+                  Import Settings
+                </Button>
+                <h2 className="font-semibold text-sm text-[rgb(var(--muted))] uppercase tracking-wide mt-4">
+                  Danger Zone
+                </h2>
+                <Button
+                  variant="danger"
+                  onClick={resetSettings}
+                  className="text-sm sm:text-base"
+                >
+                  Reset to Defaults
+                </Button>
+              </div>
+              <div className="mt-2 text-xs text-[rgb(var(--muted))]">
+                Importing will overwrite your current settings.
+              </div>
+            </>
+          )}
         </div>
       </div>
     </Modal>

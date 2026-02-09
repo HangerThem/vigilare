@@ -1,13 +1,29 @@
+import { Info } from "lucide-react"
+
 interface ToggleProps {
   checked: boolean
   onChange: (checked: boolean) => void
   label: string
+  description?: string
 }
 
-export default function Toggle({ checked, onChange, label }: ToggleProps) {
+export default function Toggle({
+  checked,
+  onChange,
+  label,
+  description,
+}: ToggleProps) {
   return (
     <label className="flex items-center justify-between cursor-pointer">
-      <span className="text-sm">{label}</span>
+      <span className="text-sm flex items-center gap-1">
+        {label}
+        {description && (
+          <span title={description}>
+            <Info size="10" className="text-[rgb(var(--muted))]" />
+          </span>
+        )}
+      </span>
+
       <button
         type="button"
         onClick={() => onChange(!checked)}

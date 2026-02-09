@@ -5,8 +5,6 @@ import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
 import ShortcutsModal from "@/components/modals/ShortcutsModal"
 import SettingsModal from "@/components/modals/SettingsModal"
 import ConfirmModal from "@/components/modals/ConfirmModal"
-import ImportFromTextModal from "@/components/modals/ImportFromTextModal"
-import ShareDashboardModal from "@/components/modals/ShareDashboardModal"
 
 export default function Modals() {
   return (
@@ -16,8 +14,6 @@ export default function Modals() {
       <ShortcutsModal />
       <SettingsModal />
       <ConfirmModal />
-      <ImportFromTextModal />
-      <ShareDashboardModal />
     </>
   )
 }

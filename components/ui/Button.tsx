@@ -9,7 +9,7 @@ interface ButtonProps extends Omit<
   "onDrag" | "onDragEnd" | "onDragStart" | "onAnimationStart"
 > {
   children: React.ReactNode
-  variant?: "primary" | "secondary" | "ghost"
+  variant?: "primary" | "secondary" | "ghost" | "danger"
   keepWidth?: boolean
 }
 
@@ -27,6 +27,8 @@ export function Button({
       "text-[rgb(var(--foreground))] border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--card))] hover:bg-[rgb(var(--card-hover))]",
     ghost:
       "text-[rgb(var(--foreground))] bg-transparent border-transparent p-0 rounded-none",
+    danger:
+      "text-[rgb(var(--background))] bg-[rgb(var(--danger))] hover:bg-[rgb(var(--danger-hover))]",
   }
 
   const buttonRef = useRef<HTMLButtonElement>(null)
