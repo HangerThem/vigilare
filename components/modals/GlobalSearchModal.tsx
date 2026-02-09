@@ -12,21 +12,8 @@ import {
 import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
-import { Item, ItemType } from "@/types/Item.type"
-
-const TYPE_LABELS: Record<ItemType, string> = {
-  link: "Link",
-  note: "Note",
-  snippet: "Command",
-  status: "Status",
-}
-
-const TYPE_STYLES: Record<ItemType, string> = {
-  note: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-  link: "bg-green-500/10 text-green-500 border-green-500/30",
-  snippet: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-  status: "bg-purple-500/10 text-purple-500 border-purple-500/30",
-}
+import { Item } from "@/types/Item.type"
+import { ITEM_TYPE_META, ItemType } from "@/const/ItemType"
 
 export default function GlobalSearchModal() {
   const { isModalOpen, openModal } = useModal()
@@ -53,11 +40,11 @@ export default function GlobalSearchModal() {
     let typeFilter: ItemType | undefined
     if (typeMatch) {
       const typeStr = typeMatch[1].toLowerCase()
-      const labelMatch = Object.entries(TYPE_LABELS).find(
-        ([, label]) => label.toLowerCase() === typeStr,
+      const labelMatch = Object.entries(ITEM_TYPE_META).find(
+        ([, meta]) => meta.label.toLowerCase() === typeStr,
       )
       typeFilter =
-        (Object.keys(TYPE_LABELS) as ItemType[]).find(
+        (Object.keys(ITEM_TYPE_META) as ItemType[]).find(
           (type) => type === typeStr,
         ) ?? (labelMatch?.[0] as ItemType | undefined)
       effectiveQuery = effectiveQuery.slice(typeMatch[0].length)
@@ -166,9 +153,9 @@ export default function GlobalSearchModal() {
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[result.type]}`}
+                      className={`text-xs px-2 py-0.5 rounded-full border ${ITEM_TYPE_META[result.type].style}`}
                     >
-                      {TYPE_LABELS[result.type]}
+                      {ITEM_TYPE_META[result.type].label}
                     </span>
                     <span className="font-medium text-sm truncate">
                       {result.title}

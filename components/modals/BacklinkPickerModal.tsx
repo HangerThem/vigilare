@@ -7,28 +7,15 @@ import { Button } from "@/components/ui/Button"
 import { useData } from "@/context/DataContext"
 import { motion, AnimatePresence } from "framer-motion"
 import Fuse from "fuse.js"
-import { Item, ItemType } from "@/types/Item.type"
+import { Item } from "@/types/Item.type"
 import { useSettings } from "@/context/SettingsContext"
+import { ITEM_TYPE_META, ItemType } from "@/const/ItemType"
 
 export type BacklinkTarget = {
   type: ItemType
   id: string
   title: string
   subtitle?: string
-}
-
-const TYPE_LABELS: Record<ItemType, string> = {
-  note: "Note",
-  link: "Link",
-  snippet: "Command",
-  status: "Status",
-}
-
-const TYPE_STYLES: Record<ItemType, string> = {
-  note: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-  link: "bg-green-500/10 text-green-500 border-green-500/30",
-  snippet: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-  status: "bg-purple-500/10 text-purple-500 border-purple-500/30",
 }
 
 interface BacklinkPickerModalProps {
@@ -65,11 +52,11 @@ export default function BacklinkPickerModal({
     let typeFilter: ItemType | undefined
     if (typeMatch) {
       const typeStr = typeMatch[1].toLowerCase()
-      const labelMatch = Object.entries(TYPE_LABELS).find(
-        ([, label]) => label.toLowerCase() === typeStr,
+      const labelMatch = Object.entries(ITEM_TYPE_META).find(
+        ([, meta]) => meta.label.toLowerCase() === typeStr,
       )
       typeFilter =
-        (Object.keys(TYPE_LABELS) as ItemType[]).find(
+        (Object.keys(ITEM_TYPE_META) as ItemType[]).find(
           (type) => type === typeStr,
         ) ?? (labelMatch?.[0] as ItemType | undefined)
       effectiveQuery = effectiveQuery.slice(typeMatch[0].length)
@@ -181,9 +168,9 @@ export default function BacklinkPickerModal({
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[item.type]}`}
+                      className={`text-xs px-2 py-0.5 rounded-full border ${ITEM_TYPE_META[item.type].style}`}
                     >
-                      {TYPE_LABELS[item.type]}
+                      {ITEM_TYPE_META[item.type].label}
                     </span>
                     <span className="font-medium text-sm truncate">
                       {item.title}
