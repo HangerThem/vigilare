@@ -130,8 +130,6 @@ function useDataManager<T extends { id: string }>(
     [items],
   )
 
-  // Compute editing item directly instead of using a function
-  // This ensures the value is always in sync with items and editingId
   const editingItem = editingId
     ? items.find((item) => item.id === editingId)
     : undefined

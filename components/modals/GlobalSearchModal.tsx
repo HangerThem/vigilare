@@ -15,10 +15,6 @@ import {
 } from "@/context/DataContext"
 import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
-import CommandItem from "@/components/panels/items/CommandItem"
-import NoteItem from "@/components/panels/items/NoteItem"
-import LinkItem from "@/components/panels/items/LinkItem"
-import StatusItem from "@/components/panels/items/StatusItem"
 import { useSettings } from "@/context/SettingsContext"
 
 enum ResultType {
@@ -33,14 +29,29 @@ type SearchResult = {
   item: LinkType | NoteType | CommandType | StatusType
 }
 
+const TYPE_LABELS: Record<ResultType, string> = {
+  [ResultType.NOTE]: "Note",
+  [ResultType.LINK]: "Link",
+  [ResultType.COMMAND]: "Command",
+  [ResultType.STATUS]: "Status",
+}
+
+const TYPE_STYLES: Record<ResultType, string> = {
+  [ResultType.NOTE]: "bg-blue-500/10 text-blue-500 border-blue-500/30",
+  [ResultType.LINK]: "bg-green-500/10 text-green-500 border-green-500/30",
+  [ResultType.COMMAND]:
+    "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
+  [ResultType.STATUS]: "bg-purple-500/10 text-purple-500 border-purple-500/30",
+}
+
 export default function GlobalSearchModal() {
-  const { isModalOpen } = useModal()
+  const { isModalOpen, openModal, closeModal } = useModal()
   const [query, setQuery] = useState("")
   const { settings } = useSettings()
-  const { items: links } = useLinks()
-  const { items: notes } = useNotes()
-  const { items: commands } = useCommands()
-  const { items: statuses } = useStatuses()
+  const { items: links, setEditingId: setLinkEditingId } = useLinks()
+  const { items: notes, setEditingId: setNoteEditingId } = useNotes()
+  const { items: commands, setEditingId: setCommandEditingId } = useCommands()
+  const { items: statuses, setEditingId: setStatusEditingId } = useStatuses()
 
   const isOpen = isModalOpen("globalSearch")
 
@@ -68,7 +79,13 @@ export default function GlobalSearchModal() {
     ]
 
     const fuse = new Fuse(allItems, {
-      keys: ["item.url", "item.code", "item.title", "item.content"],
+      keys: [
+        "item.url",
+        "item.code",
+        "item.title",
+        "item.content",
+        "type",
+      ],
       threshold: settings.fuzzySearchThreshold,
     })
 
@@ -82,6 +99,53 @@ export default function GlobalSearchModal() {
     statuses,
     settings.fuzzySearchThreshold,
   ])
+
+  const handleOpenResult = useCallback(
+    (result: SearchResult) => {
+      switch (result.type) {
+        case ResultType.NOTE:
+          setNoteEditingId(result.item.id)
+          openModal("notes")
+          break
+        case ResultType.LINK:
+          setLinkEditingId(result.item.id)
+          openModal("links")
+          break
+        case ResultType.COMMAND:
+          setCommandEditingId(result.item.id)
+          openModal("commands")
+          break
+        case ResultType.STATUS:
+          setStatusEditingId(result.item.id)
+          openModal("status")
+          break
+      }
+      closeModal()
+    },
+    [
+      closeModal,
+      openModal,
+      setCommandEditingId,
+      setLinkEditingId,
+      setNoteEditingId,
+      setStatusEditingId,
+    ],
+  )
+
+  const getSubtitle = useCallback((result: SearchResult) => {
+    switch (result.type) {
+      case ResultType.NOTE:
+        return (result.item as NoteType).category
+      case ResultType.LINK:
+        return (result.item as LinkType).url
+      case ResultType.COMMAND:
+        return (result.item as CommandType).language
+      case ResultType.STATUS:
+        return (result.item as StatusType).state
+      default:
+        return ""
+    }
+  }, [])
 
   const handleClose = useCallback(() => {
     setQuery("")
@@ -103,101 +167,46 @@ export default function GlobalSearchModal() {
         />
 
         <div className="max-h-60 sm:max-h-80 md:max-h-120 overflow-y-auto pr-2 sm:pr-3">
-          {results.filter((result) => result.type === ResultType.LINK).length >
-            0 && (
-            <>
-              <h2
-                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
-              >
-                Links
-              </h2>
-              <ul
-                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
-              >
-                {results
-                  .filter((result) => result.type === ResultType.LINK)
-                  .map((result, index) => (
-                    <LinkItem
-                      link={result.item as LinkType}
-                      key={index}
-                      movable={false}
-                    />
-                  ))}
-              </ul>
-            </>
-          )}
-          {results.filter((result) => result.type === ResultType.NOTE).length >
-            0 && (
-            <>
-              <h2
-                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
-              >
-                Notes
-              </h2>
-              <ul
-                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
-              >
-                {results
-                  .filter((result) => result.type === ResultType.NOTE)
-                  .map((result, index) => (
-                    <NoteItem
-                      note={result.item as NoteType}
-                      key={index}
-                      movable={false}
-                    />
-                  ))}
-              </ul>
-            </>
-          )}
-          {results.filter((result) => result.type === ResultType.COMMAND)
-            .length > 0 && (
-            <>
-              <h2
-                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
-              >
-                Commands
-              </h2>
-              <ul
-                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
-              >
-                {results
-                  .filter((result) => result.type === ResultType.COMMAND)
-                  .map((result, index) => (
-                    <CommandItem
-                      command={result.item as CommandType}
-                      key={index}
-                      movable={false}
-                    />
-                  ))}
-              </ul>
-            </>
-          )}
-          {results.filter((result) => result.type === ResultType.STATUS)
-            .length > 0 && (
-            <>
-              <h2
-                className={`font-semibold ${settings.compactMode ? "text-base mb-1" : "text-lg mb-2"}`}
-              >
-                Statuses
-              </h2>
-              <ul
-                className={`${settings.compactMode ? "space-y-1 mb-3" : "space-y-2 mb-4"}`}
-              >
-                {results
-                  .filter((result) => result.type === ResultType.STATUS)
-                  .map((result) => (
-                    <StatusItem
-                      status={result.item as StatusType}
-                      movable={false}
-                      key={result.item.id}
-                    />
-                  ))}
-              </ul>
-            </>
-          )}
-          {results.length === 0 && (
+          {results.length === 0 && query.trim() !== "" && (
             <div className="p-2 text-[rgb(var(--muted))]">
               No results found.
+            </div>
+          )}
+
+          {results.length === 0 && query.trim() === "" && (
+            <div className="p-2 text-[rgb(var(--muted))]">
+              Start typing to search across items.
+            </div>
+          )}
+
+          {results.length > 0 && (
+            <div className="space-y-2">
+              {results.map((result) => (
+                <button
+                  key={`${result.type}:${result.item.id}`}
+                  type="button"
+                  onClick={() => handleOpenResult(result)}
+                  className="w-full text-left rounded-lg border border-[rgb(var(--border))] hover:border-[rgb(var(--border-hover))] bg-[rgb(var(--background))] p-2 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[result.type]}`}
+                    >
+                      {TYPE_LABELS[result.type]}
+                    </span>
+                    <span className="font-medium text-sm truncate">
+                      {"title" in result.item
+                        ? result.item.title
+                        : "Untitled"}
+                    </span>
+                  </div>
+                  {getSubtitle(result) && (
+                    <div className="mt-1 text-xs text-[rgb(var(--muted))] truncate">
+                      {getSubtitle(result)}
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
           )}
         </div>

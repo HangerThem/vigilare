@@ -12,11 +12,11 @@ import Modals from "@/app/modals"
 
 export default function Home() {
   const { openModal, isModalOpen, closeModal } = useModal()
-  const { settings, isEditingShortcut } = useSettings()
+  const { settings, isDisableShortcuts } = useSettings()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isEditingShortcut) return
+      if (isDisableShortcuts) return
 
       const shortcut = Object.values(settings.shortcuts).find(
         (s) =>
@@ -47,7 +47,7 @@ export default function Home() {
     closeModal,
     isModalOpen,
     settings.shortcuts,
-    isEditingShortcut,
+    isDisableShortcuts,
   ])
 
   return (

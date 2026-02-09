@@ -1,8 +1,23 @@
-import { GripVertical, Pencil, Trash } from "lucide-react"
-import { NoteCategory, NoteType, useNotes } from "@/context/DataContext"
+import {
+  GripVertical,
+  Pencil,
+  SquareArrowOutUpRight,
+  Trash,
+} from "lucide-react"
+import {
+  NoteCategory,
+  NoteType,
+  useCommands,
+  useLinks,
+  useNotes,
+  useStatuses,
+} from "@/context/DataContext"
 import { motion } from "framer-motion"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import rehypeRaw from "rehype-raw"
 
 interface NoteItemProps {
   note: NoteType
@@ -22,11 +37,85 @@ export default function NoteItem({
   movable = true,
   compact: compactProp,
 }: NoteItemProps) {
-  const { setEditingId, remove } = useNotes()
+  const { setEditingId, remove, getById } = useNotes()
+  const { setEditingId: setCommandEditingId, getById: getCommandById } =
+    useCommands()
+  const { setEditingId: setLinkEditingId, getById: getLinkById } = useLinks()
+  const { setEditingId: setStatusEditingId, getById: getStatusById } =
+    useStatuses()
   const { openModal } = useModal()
   const { settings } = useSettings()
 
   const compact = compactProp ?? settings.compactMode
+
+  const transformUrl = (url?: string) => {
+    if (!url) return ""
+    if (url.startsWith("backlink:")) return url
+    if (/^(https?:|mailto:|tel:)/i.test(url)) return url
+    if (
+      url.startsWith("/") ||
+      url.startsWith("#") ||
+      url.startsWith("./") ||
+      url.startsWith("../")
+    ) {
+      return url
+    }
+    if (!/^[a-zA-Z][a-zA-Z+.-]*:/.test(url)) {
+      return url
+    }
+    return ""
+  }
+
+  function getBacklinkLabel(type: string, id: string) {
+    switch (type) {
+      case "note":
+        return getById(id)?.title
+      case "command":
+        return getCommandById(id)?.title
+      case "link":
+        return getLinkById(id)?.title
+      case "status":
+        return getStatusById(id)?.title
+      default:
+        return null
+    }
+  }
+
+  function renderReferences(content: string) {
+    const withBacklinks = content.replace(
+      /\[\[(note|command|link|status):([^\]]+)\]\]/g,
+      (_, type, id) => {
+        const label = getBacklinkLabel(type, id) ?? `${type}:${id}`
+        return `[${label}](backlink:${type}:${id})`
+      },
+    )
+
+    return withBacklinks.replace(
+      /\[\[([^\]]+)\]\]/g,
+      (_, title) => `<span class="note-ref">${title}</span>`,
+    )
+  }
+
+  function openBacklink(type: string, id: string) {
+    switch (type) {
+      case "note":
+        setEditingId(id)
+        openModal("notes")
+        return
+      case "command":
+        setCommandEditingId(id)
+        openModal("commands")
+        return
+      case "link":
+        setLinkEditingId(id)
+        openModal("links")
+        return
+      case "status":
+        setStatusEditingId(id)
+        openModal("status")
+        return
+    }
+  }
 
   return (
     <motion.li
@@ -78,9 +167,76 @@ export default function NoteItem({
           {note.title}
         </span>
         {!compact && (
-          <span className="block text-sm text-[rgb(var(--muted))] whitespace-pre-wrap">
-            {note.content}
-          </span>
+          <div className="block text-sm text-[rgb(var(--muted))] overflow-hidden leading-relaxed">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              urlTransform={transformUrl}
+              components={{
+                a: ({ children, href, ...props }) => {
+                  const match = href?.match(
+                    /^backlink:(note|command|link|status):(.+)$/,
+                  )
+                  if (match) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => openBacklink(match[1], match[2])}
+                        className="underline text-[rgb(var(--primary))] underline-offset-2 cursor-pointer"
+                      >
+                        {children}
+                      </button>
+                    )
+                  }
+                  return (
+                    <a
+                      {...props}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[rgb(var(--primary))] underline underline-offset-2"
+                    >
+                      {children}{" "}
+                      <SquareArrowOutUpRight
+                        size={12}
+                        className="inline mb-0.5"
+                      />
+                    </a>
+                  )
+                },
+                span: ({ children, className, ...props }) => (
+                  <span
+                    {...props}
+                    className={`text-blue-500 underline ${className ?? ""}`}
+                  >
+                    {children}
+                  </span>
+                ),
+                ul: ({ children, ...props }) => (
+                  <ul {...props} className="list-disc pl-5 my-1 space-y-1">
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children, ...props }) => (
+                  <ol {...props} className="list-decimal pl-5 my-1 space-y-1">
+                    {children}
+                  </ol>
+                ),
+                li: ({ children, ...props }) => (
+                  <li {...props} className="leading-relaxed">
+                    {children}
+                  </li>
+                ),
+                p: ({ children, ...props }) => (
+                  <p {...props} className="my-1">
+                    {children}
+                  </p>
+                ),
+              }}
+            >
+              {renderReferences(note.content)}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
     </motion.li>

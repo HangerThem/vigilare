@@ -110,9 +110,9 @@ const defaultSettings: AppSettings = {
 
 interface SettingsContextType {
   settings: AppSettings
-  isEditingShortcut: boolean
-  startEditingShortcut: () => void
-  stopEditingShortcut: () => void
+  isDisableShortcuts: boolean
+  disableShortcuts: () => void
+  enableShortcuts: () => void
   updateSetting: <K extends keyof AppSettings>(
     key: K,
     value: AppSettings[K],
@@ -127,7 +127,7 @@ const SettingsContext = createContext<SettingsContextType | null>(null)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const isMac = useIsMac()
-  const [isEditingShortcut, setIsEditingShortcut] = useState(false)
+  const [isDisableShortcuts, setIsDisableShortcuts] = useState(false)
   const platformShortcuts: Shortcuts = Object.fromEntries(
     Object.entries(defaultShortcuts).map(([name, shortcut]) => [
       name,
@@ -205,9 +205,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     <SettingsContext.Provider
       value={{
         settings,
-        isEditingShortcut,
-        startEditingShortcut: () => setIsEditingShortcut(true),
-        stopEditingShortcut: () => setIsEditingShortcut(false),
+        isDisableShortcuts,
+        disableShortcuts: () => setIsDisableShortcuts(true),
+        enableShortcuts: () => setIsDisableShortcuts(false),
         updateSetting,
         updateShortcut,
         resetShortcut,
