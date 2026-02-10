@@ -10,12 +10,14 @@ interface ButtonProps extends Omit<
 > {
   children: React.ReactNode
   variant?: "primary" | "secondary" | "ghost" | "danger"
+  size?: "sm" | "md" | "lg"
   keepWidth?: boolean
 }
 
 export function Button({
   children,
   variant = "primary",
+  size = "md",
   keepWidth = false,
   className,
   ...props
@@ -29,6 +31,12 @@ export function Button({
       "text-[rgb(var(--foreground))] bg-transparent border-transparent p-0 rounded-none",
     danger:
       "text-[rgb(var(--background))] bg-[rgb(var(--danger))] hover:bg-[rgb(var(--danger-hover))]",
+  }
+
+  const sizes = {
+    sm: "text-sm",
+    md: "text-base",
+    lg: "text-lg",
   }
 
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -48,6 +56,7 @@ export function Button({
       className={cn(
         "flex items-center gap-2 p-2 rounded-lg border transition-colors duration-200 cursor-pointer",
         variants[variant],
+        sizes[size],
         className,
       )}
       style={keepWidth && width ? { width } : undefined}

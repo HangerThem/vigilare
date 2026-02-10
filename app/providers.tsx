@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/context/ThemeContext"
 import { useAutoBackup } from "@/hook/useAutoBackup"
 import { ReactNode, useEffect, createContext, useContext } from "react"
 import { MotionConfig } from "framer-motion"
+import { ToastProvider } from "@/context/ToastContext"
 
 const AnimationContext = createContext<boolean>(true)
 
@@ -49,13 +50,15 @@ export function Providers({ children }: { children: ReactNode }) {
     <SettingsProvider>
       <MotionWrapper>
         <ThemeProvider>
-          <ModalOpenProvider>
-            <ConfirmDialogProvider>
-              <DataProvider>
-                <AutoBackupManager>{children}</AutoBackupManager>
-              </DataProvider>
-            </ConfirmDialogProvider>
-          </ModalOpenProvider>
+          <ToastProvider>
+            <ModalOpenProvider>
+              <ConfirmDialogProvider>
+                <DataProvider>
+                  <AutoBackupManager>{children}</AutoBackupManager>
+                </DataProvider>
+              </ConfirmDialogProvider>
+            </ModalOpenProvider>
+          </ToastProvider>
         </ThemeProvider>
       </MotionWrapper>
     </SettingsProvider>

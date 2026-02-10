@@ -1,7 +1,7 @@
 "use client"
 
 import { SnippetsPanel } from "@/components/panels/SnippetsPanel"
-import { Header } from "@/components/Header"
+import { Header } from "@/components/layout/Header"
 import { LinksPanel } from "@/components/panels/LinksPanel"
 import { NotesPanel } from "@/components/panels/NotesPanel"
 import { StatusPanel } from "@/components/panels/StatusPanel"
@@ -9,6 +9,7 @@ import { useEffect } from "react"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
 import Modals from "@/app/modals"
+import { ToastContainer } from "@/components/layout/ToastContainer"
 
 export default function Home() {
   const { openModal, isModalOpen, closeModal } = useModal()
@@ -54,6 +55,7 @@ export default function Home() {
     <div
       className={`relative ${settings.compactMode ? "gap-1" : "gap-2"} min-h-screen md:max-h-screen flex flex-col ${settings.compactMode ? "p-2 sm:p-3 md:p-4" : "p-3 sm:p-4 md:p-6"} bg-[rgb(var(--background))]`}
     >
+      <ToastContainer />
       <Modals />
       <Header />
       <main

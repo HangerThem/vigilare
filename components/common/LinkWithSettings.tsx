@@ -1,3 +1,4 @@
+import { useSettings } from "@/context/SettingsContext"
 import Link, { LinkProps } from "next/link"
 import { ReactNode } from "react"
 
@@ -11,8 +12,9 @@ export default function LinkWithSettings({
   className,
   ...props
 }: LinkWithSettingsProps) {
+  const { settings } = useSettings()
   return (
-    <Link className={className} {...props}>
+    <Link className={className} target={settings.openLinksInNewTab ? "_blank" : "_self"} {...props}>
       {children}
     </Link>
   )

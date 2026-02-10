@@ -8,6 +8,8 @@ import { Snippet } from "@/types/Snippet.type"
 import { Link } from "@/types/Link.type"
 import { Note } from "@/types/Note.type"
 import { Status } from "@/types/Status.type"
+import { ToastCreate, useToast } from "@/context/ToastContext"
+import * as Icons from "lucide-react"
 
 interface DataManager<T extends { id: string }> {
   items: T[]
@@ -37,6 +39,7 @@ function useDataManager<T extends { id: string }>(
   confirmTitle: string,
   confirmMessage: string,
 ): DataManager<T> {
+  const { addToast } = useToast()
   const { settings } = useSettings()
   const { confirm } = useConfirmDialog()
   const { value: items, setValue: setItems } = useLocalStorageState<T[]>(
@@ -63,19 +66,36 @@ function useDataManager<T extends { id: string }>(
 
   const remove = useCallback(
     (id: string) => {
+      const toast: ToastCreate = {
+        message: "Deleted item",
+        actionLabel: "Undo",
+        icon: Icons.Trash2,
+        ttl: 5000,
+        action: () => {
+          const itemToRestore = items.find((item) => item.id === id)
+          if (itemToRestore) {
+            setItems((prev) => [...prev, itemToRestore])
+          }
+        },
+      }
+
       if (settings.confirmBeforeDelete) {
         confirm(confirmTitle, confirmMessage).then((confirmed) => {
           if (confirmed) {
             setItems((prev) => prev.filter((item) => item.id !== id))
+            addToast(toast)
           }
         })
       } else {
         setItems((prev) => prev.filter((item) => item.id !== id))
+        addToast(toast)
       }
     },
     [
       setItems,
       confirm,
+      addToast,
+      items,
       confirmTitle,
       confirmMessage,
       settings.confirmBeforeDelete,
