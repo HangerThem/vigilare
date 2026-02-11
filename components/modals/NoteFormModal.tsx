@@ -143,7 +143,7 @@ export default function NoteFormModal() {
               <RichTextarea
                 {...field}
                 ref={contentRef}
-                placeholder="Content (supports markdown)"
+                placeholder="Content"
                 rows={4}
                 autoresize
                 className="resize-none leading-relaxed"
@@ -152,10 +152,6 @@ export default function NoteFormModal() {
                   setIsPickingBacklink(true)
                 }}
               />
-              <p className="text-xs text-[rgb(var(--muted))]">
-                Tip: Use `*` or `_` for emphasis, `- ` or `1.` for lists, `[[`
-                to insert backlinks, `Cmd/Ctrl+K` for links.
-              </p>
             </div>
           )}
         />

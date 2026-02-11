@@ -386,7 +386,7 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
         />
         {preview ? (
           <div
-            className="w-full p-2 rounded-lg border outline-none transition-colors duration-200 max-h-64 overflow-auto bg-[rgb(var(--background))]"
+            className="text-[rgb(var(--foreground))] bg-[rgb(var(--background))] border border-[rgb(var(--border))] rounded-lg p-2 break-words overflow-y-auto max-h-64 text-base"
             style={{ height: previewHeight ?? undefined }}
           >
             <RenderedMarkdown value={props.value as string} isPreview />
@@ -398,6 +398,7 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
             onFocus={disableShortcuts}
             onBlur={enableShortcuts}
             onKeyDown={handleKeyDown}
+            animation={false}
             onChange={(e) => {
               onChange?.(e)
             }}

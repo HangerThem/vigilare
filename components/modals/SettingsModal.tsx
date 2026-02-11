@@ -482,9 +482,9 @@ export default function SettingsModal() {
                                 </span>
                               ) : (
                                 displayKeys.map((key, index) => (
-                                  <span
+                                  <kbd
                                     key={`${key}-${index}`}
-                                    className={`px-1.5 sm:px-2 py-0.5 sm:py-1 border rounded bg-[rgb(var(--muted-background))] text-xs sm:text-sm flex items-center justify-center ${
+                                    className={`font-sans px-1.5 sm:px-2 py-0.5 sm:py-1 border rounded bg-[rgb(var(--muted-background))] text-xs sm:text-sm flex items-center justify-center ${
                                       isEditing
                                         ? "border-[rgb(var(--primary))] text-[rgb(var(--foreground))]"
                                         : "border-[rgb(var(--muted))] text-[rgb(var(--muted))]"
@@ -495,7 +495,7 @@ export default function SettingsModal() {
                                     ) : (
                                       key
                                     )}
-                                  </span>
+                                  </kbd>
                                 ))
                               )}
                             </div>

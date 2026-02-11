@@ -27,16 +27,16 @@ export default function ShortcutsModal() {
                 <td className="py-2">
                   <div className="flex gap-1 flex-wrap">
                     {shortcut.keys.map((key, index) => (
-                      <span
+                      <kbd
                         key={index}
-                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 border border-[rgb(var(--muted))] rounded bg-[rgb(var(--muted-background))] text-[rgb(var(--muted))] text-xs sm:text-sm flex items-center justify-center"
+                        className="font-sans px-1.5 sm:px-2 py-0.5 sm:py-1 border border-[rgb(var(--muted))] rounded bg-[rgb(var(--muted-background))] text-[rgb(var(--muted))] text-xs sm:text-sm flex items-center justify-center"
                       >
                         {key === "Meta" ? (
                           <Command size={14} aria-label="Control" />
                         ) : (
                           key
                         )}
-                      </span>
+                      </kbd>
                     ))}
                   </div>
                 </td>

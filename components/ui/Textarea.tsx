@@ -10,11 +10,15 @@ interface TextareaProps extends Omit<
   "onDrag" | "onDragEnd" | "onDragStart" | "onAnimationStart"
 > {
   variant?: "primary" | "secondary" | "ghost"
+  animation?: boolean
   autoresize?: boolean
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ variant = "primary", className, autoresize, ...props }, ref) => {
+  (
+    { variant = "primary", className, animation = true, autoresize, ...props },
+    ref,
+  ) => {
     const internalRef = useRef<HTMLTextAreaElement>(null)
 
     const setRefs = useCallback(
@@ -42,7 +46,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       if (!internalRef.current) return
       const el = internalRef.current
       el.style.height = "auto"
-      el.style.height = `${el.scrollHeight}px`
+      el.style.height = el.scrollHeight + 2 + "px"
     }
 
     useEffect(() => {
@@ -54,20 +58,23 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <motion.textarea
         ref={setRefs}
-        initial={variant !== "ghost" ? { scale: 0.95, opacity: 0 } : false}
-        animate={{ scale: 1, opacity: 1 }}
-        whileTap={{ scale: 0.98 }}
-        className={cn(
-          "w-full p-2 rounded-lg border outline-none transition-colors duration-200 max-h-64",
-          variants[variant],
-          className,
-          autoresize ? "resize-none" : "",
-        )}
         {...props}
         onChange={(e) => {
           if (autoresize) resize()
           if (props.onChange) props.onChange(e)
         }}
+        {...(animation &&
+          variant !== "ghost" && {
+            initial: { scale: 0.95, opacity: 0 },
+            animate: { scale: 1, opacity: 1 },
+          })}
+        whileTap={{ scale: 0.95 }}
+        className={cn(
+          "w-full text-base p-2 rounded-lg border transition-colors duration-200 overflow-hidden block outline-none resize-none",
+          autoresize ? "overflow-y-auto max-h-64" : "",
+          variants[variant],
+          className,
+        )}
       />
     )
   },
