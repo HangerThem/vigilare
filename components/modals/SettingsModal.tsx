@@ -10,6 +10,7 @@ import Toggle from "@/components/ui/Toggle"
 import { Command, RotateCcw } from "lucide-react"
 import { ShortcutName } from "@/context/SettingsContext"
 import { downloadSettings, importSettingsFile } from "@/utils/appData"
+import { useToast } from "@/context/ToastContext"
 
 const MODIFIER_KEYS = ["Shift", "Control", "Meta", "Alt"]
 
@@ -66,6 +67,7 @@ export default function SettingsModal() {
     enableShortcuts,
     isShortcutChanged,
   } = useSettings()
+  const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState<
     "appearance" | "behavior" | "data" | "shortcuts" | "advanced"
   >("appearance")
@@ -529,7 +531,21 @@ export default function SettingsModal() {
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={importSettingsFile}
+                  onClick={() => {
+                    importSettingsFile()
+                      .then(() => {
+                        addToast({
+                          message: "Settings imported successfully",
+                          icon: RotateCcw,
+                        })
+                      })
+                      .catch((error) => {
+                        addToast({
+                          message: error.message,
+                          icon: RotateCcw,
+                        })
+                      })
+                  }}
                   className="text-sm sm:text-base"
                 >
                   Import Settings

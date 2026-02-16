@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { downloadAppData, importAppDataFile } from "@/utils/appData"
 import { useSettings } from "@/context/SettingsContext"
+import { useToast } from "@/context/ToastContext"
 
 interface CommandBase {
   icon?: React.ReactNode
@@ -39,6 +40,7 @@ export type CommandWithCommands = CommandBase & {
 type Command = CommandWithAction | CommandWithCommands
 
 export default function CommandPaletteModal() {
+  const { addToast } = useToast()
   const { isModalOpen, closeModal } = useModal()
   const [query, setQuery] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -112,6 +114,18 @@ export default function CommandPaletteModal() {
         name: "Import Data",
         action: () => {
           importAppDataFile()
+            .then(() => {
+              addToast({
+                message: "Data imported successfully.",
+                icon: Link,
+              })
+            })
+            .catch(() => {
+              addToast({
+                message: "Failed to import data.",
+                icon: SquareSlash,
+              })
+            })
         },
       },
       {
@@ -138,7 +152,7 @@ export default function CommandPaletteModal() {
     ]
 
     return commands
-  }, [openModal, getIcon, setTheme, themeOptions])
+  }, [openModal, getIcon, setTheme, themeOptions, addToast])
 
   const [commandsState, setCommandsState] =
     useState<Command[]>(generateCommands())

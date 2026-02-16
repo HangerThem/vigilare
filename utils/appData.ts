@@ -92,9 +92,11 @@ export function exportAppData(): string {
  */
 export function exportSettings(): string {
   const value = localStorage.getItem(SETTINGS_KEY)
+  console.log("Exporting settings:", value)
   if (value === null) {
     return "{}"
   }
+
   return value
 }
 
@@ -171,84 +173,93 @@ export function downloadSettings(
  * Prompts the user to select a JSON file and imports its contents as app data.
  * Reloads the page after successful import.
  */
-export function importAppDataFile(): void {
-  const fileInput = document.createElement("input")
-  fileInput.type = "file"
-  fileInput.accept = ".json"
+export function importAppDataFile(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const fileInput = document.createElement("input")
+    fileInput.type = "file"
+    fileInput.accept = ".json"
 
-  fileInput.onchange = () => {
-    const file = fileInput.files?.[0]
-    if (!file) {
-      fileInput.remove()
-      return
-    }
-
-    const reader = new FileReader()
-
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string
-        const raw = JSON.parse(text)
-        const normalized = normalizeObject(raw)
-
-        importAppData(normalized)
-        window.location.reload()
-      } catch {
-        console.error("Invalid Vigilare backup file")
-      } finally {
+    fileInput.onchange = () => {
+      const file = fileInput.files?.[0]
+      if (!file) {
         fileInput.remove()
+        return
       }
+
+      const reader = new FileReader()
+
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string
+          const raw = JSON.parse(text)
+          const normalized = normalizeObject(raw)
+
+          importAppData(normalized)
+          resolve()
+        } catch {
+          console.error("Invalid Vigilare data file")
+          reject(new Error("Invalid Vigilare data file"))
+        } finally {
+          fileInput.remove()
+        }
+      }
+
+      reader.onerror = () => {
+        console.error("Failed to read file")
+        fileInput.remove()
+        reject(new Error("Failed to read file"))
+      }
+
+      reader.readAsText(file)
     }
 
-    reader.onerror = () => {
-      console.error("Failed to read file")
-      fileInput.remove()
-    }
-
-    reader.readAsText(file)
-  }
-
-  fileInput.click()
+    fileInput.click()
+  })
 }
 
 /**
  * Prompts the user to select a JSON file and imports its contents as settings.
  */
-export function importSettingsFile(): void {
-  const fileInput = document.createElement("input")
-  fileInput.type = "file"
-  fileInput.accept = ".json"
+export function importSettingsFile(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const fileInput = document.createElement("input")
+    fileInput.type = "file"
+    fileInput.accept = ".json"
 
-  fileInput.onchange = () => {
-    const file = fileInput.files?.[0]
-    if (!file) {
-      fileInput.remove()
-      return
-    }
-
-    const reader = new FileReader()
-
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string
-        const raw = JSON.parse(text)
-        const normalized = normalizeObject(raw)
-
-        importSettings(normalized)
-      } catch {
-        console.error("Invalid Vigilare settings file")
-      } finally {
+    fileInput.onchange = () => {
+      const file = fileInput.files?.[0]
+      if (!file) {
         fileInput.remove()
+        return
       }
+
+      const reader = new FileReader()
+
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string
+          const raw = JSON.parse(text)
+          const normalized = normalizeObject(raw)
+
+          importSettings(normalized)
+          resolve()
+        } catch {
+          console.error("Invalid Vigilare settings file")
+          reject(new Error("Invalid Vigilare settings file"))
+        } finally {
+          fileInput.remove()
+        }
+      }
+
+      reader.onerror = () => {
+        console.error("Failed to read file")
+        fileInput.remove()
+        reject(new Error("Failed to read file"))
+      }
+
+      reader.readAsText(file)
     }
 
-    reader.onerror = () => {
-      console.error("Failed to read file")
-      fileInput.remove()
-    }
-
-    reader.readAsText(file)
-  }
-
-  fileInput.click()
+    fileInput.click()
+  })
 }

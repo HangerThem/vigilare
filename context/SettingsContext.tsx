@@ -140,6 +140,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     ]),
   ) as Shortcuts
 
+  useEffect(() => {
+    const storedSettings = localStorage.getItem("appSettings")
+    if (!storedSettings) {
+      localStorage.setItem(
+        "appSettings",
+        JSON.stringify({
+          ...defaultSettings,
+          shortcuts: platformShortcuts,
+        }),
+      )
+    }
+  }, [platformShortcuts])
+
   const { value: settings, setValue: setSettings } =
     useLocalStorageState<AppSettings>("appSettings", {
       ...defaultSettings,
