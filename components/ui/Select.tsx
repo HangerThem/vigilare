@@ -3,7 +3,14 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
-import { createPopper, Instance as PopperInstance } from "@popperjs/core"
+import {
+  useFloating,
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  size,
+} from "@floating-ui/react"
 import Fuse from "fuse.js"
 import { Check, ChevronDown, Search, X } from "lucide-react"
 import { cn } from "@/utils/cn"
@@ -54,7 +61,23 @@ export function Select({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const popperRef = useRef<PopperInstance | null>(null)
+
+  const { refs, floatingStyles } = useFloating({
+    open: isOpen,
+    onOpenChange: setIsOpen,
+    placement: "bottom-start",
+    whileElementsMounted: autoUpdate,
+    middleware: [
+      offset(4),
+      flip({ fallbackPlacements: ["top-start"] }),
+      shift({ padding: 8 }),
+      size({
+        apply({ rects, elements }) {
+          elements.floating.style.width = `${rects.reference.width}px`
+        },
+      }),
+    ],
+  })
 
   const fuse = useMemo(
     () =>
@@ -79,39 +102,6 @@ export function Select({
     () => options.find((opt) => opt.value === value) ?? null,
     [options, value],
   )
-
-  useEffect(() => {
-    if (isOpen && triggerRef.current && dropdownRef.current) {
-      popperRef.current = createPopper(
-        triggerRef.current,
-        dropdownRef.current,
-        {
-          placement: "bottom-start",
-          modifiers: [
-            { name: "offset", options: { offset: [0, 4] } },
-            { name: "flip", options: { fallbackPlacements: ["top-start"] } },
-            {
-              name: "sameWidth",
-              enabled: true,
-              phase: "beforeWrite",
-              requires: ["computeStyles"],
-              fn: ({ state }) => {
-                state.styles.popper.width = `${state.rects.reference.width}px`
-              },
-              effect: ({ state }) => {
-                state.elements.popper.style.width = `${(state.elements.reference as HTMLElement).offsetWidth}px`
-              },
-            },
-          ],
-        },
-      )
-    }
-
-    return () => {
-      popperRef.current?.destroy()
-      popperRef.current = null
-    }
-  }, [isOpen])
 
   const handleSelect = useCallback(
     (option: SelectOption) => {
@@ -219,9 +209,12 @@ export function Select({
 
   const dropdown = isOpen ? (
     <div
-      ref={dropdownRef}
-      className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden keep-transform"
-      style={{ position: "absolute", top: 0, left: 0 }}
+      ref={(node) => {
+        dropdownRef.current = node
+        refs.setFloating(node)
+      }}
+      className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden"
+      style={floatingStyles}
     >
       {searchable && (
         <div className="flex gap-2 items-center p-2 border-b border-[rgb(var(--border))]">
@@ -293,7 +286,10 @@ export function Select({
   return (
     <div className={cn("relative w-full", className)} onKeyDown={handleKeyDown}>
       <motion.div
-        ref={triggerRef}
+        ref={(node) => {
+          triggerRef.current = node
+          refs.setReference(node)
+        }}
         whileTap={disabled ? undefined : { scale: 0.98 }}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={cn(

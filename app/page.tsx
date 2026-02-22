@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <div
-      className={`relative ${settings.compactMode ? "gap-1" : "gap-2"} min-h-screen md:max-h-screen flex flex-col ${settings.compactMode ? "p-2 sm:p-3 md:p-4" : "p-3 sm:p-4 md:p-6"} bg-[rgb(var(--background))]`}
+      className={`relative ${settings.compactMode ? "gap-1" : "gap-2"} min-h-screen md:max-h-screen flex flex-col ${settings.compactMode ? "p-1 sm:p-2 md:p-3" : "p-2 sm:p-3 md:p-4"} bg-[rgb(var(--background))]`}
     >
       <ToastContainer />
       <Modals />
