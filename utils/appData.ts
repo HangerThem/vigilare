@@ -1,23 +1,8 @@
 "use client"
 
-/**
- * Utility functions for exporting, importing, downloading, and normalizing application data and settings
- * for the Vigilare app, using localStorage as the data store.
- *
- * @module appDataUtils
- */
 import { notifyAllStorageListeners } from "@/utils/storageListeners"
 
-/**
- * The key used for storing settings in localStorage.
- * @constant
- */
 const SETTINGS_KEY = "appSettings"
-
-/**
- * The keys used for storing main app data in localStorage.
- * @constant
- */
 const DATA_KEYS = ["links", "notes", "snippets", "statuses"]
 
 /**

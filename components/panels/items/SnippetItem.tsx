@@ -6,6 +6,7 @@ import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
 import { Snippet } from "@/types/Snippet.type"
 import { useSnippets } from "@/context/DataContext"
+import { OverflowTooltip } from "@/components/ui/OverflowTooltip"
 
 interface SnippetItemProps {
   snippet: Snippet
@@ -71,10 +72,13 @@ export default function SnippetItem({ snippet }: SnippetItemProps) {
         className="mr-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors"
       />
 
-      <div className="w-full">
-        <span className={`font-medium ${compact ? "text-sm" : ""}`}>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <OverflowTooltip
+          content={snippet.title}
+          className={`font-medium mr-12 ${compact ? "text-sm" : ""}`}
+        >
           {snippet.title}
-        </span>
+        </OverflowTooltip>
 
         {!compact && (
           <div className="text-sm text-[rgb(var(--muted))] border border-[rgb(var(--border))] mt-1 p-1 rounded bg-[rgb(var(--card-hover))] w-full">

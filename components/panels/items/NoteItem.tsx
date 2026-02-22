@@ -6,6 +6,7 @@ import { useSettings } from "@/context/SettingsContext"
 import { CATEGORY_META } from "@/const/Category"
 import { Note } from "@/types/Note.type"
 import { RenderedMarkdown } from "@/components/common/RenderedMarkdown"
+import { OverflowTooltip } from "@/components/ui/OverflowTooltip"
 
 interface NoteItemProps {
   note: Note
@@ -62,10 +63,14 @@ export default function NoteItem({ note }: NoteItemProps) {
         className="mx-1 mt-1 handle cursor-move text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors flex-shrink-0"
       />
 
-      <div className="mr-auto min-w-0 flex-1">
-        <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
+      <div className="mr-auto lex-1 min-w-0 flex flex-col">
+        <OverflowTooltip
+          content={note.title}
+          className={`font-medium mr-12 ${compact ? "text-sm" : ""}`}
+        >
           {note.title}
-        </span>
+        </OverflowTooltip>
+
         {!compact && (
           <div className="block text-sm text-[rgb(var(--muted))] overflow-hidden leading-relaxed">
             <RenderedMarkdown value={note.content} />

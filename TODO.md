@@ -7,7 +7,7 @@
 
 ## Readability + layout
 
-- [ ] Clamp long titles with tooltip on hover
+- [x] Clamp long titles with tooltip on hover
 - [ ] Highlight search term matches inside list items
 
 ## Global QoL

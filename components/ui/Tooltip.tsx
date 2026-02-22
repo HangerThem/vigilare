@@ -8,12 +8,15 @@ import {
 } from "@floating-ui/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+import { cn } from "@/utils/cn"
 
 interface TooltipProps {
   children: React.ReactNode
   content: React.ReactNode
   placement?: "top" | "bottom" | "left" | "right"
   delay?: number
+  className?: string
+  disabled?: boolean
 }
 
 export default function Tooltip({
@@ -21,6 +24,8 @@ export default function Tooltip({
   content,
   placement = "top",
   delay = 0,
+  className,
+  disabled = false,
 }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false)
   const openTimeout = useRef<number>(0)
@@ -42,12 +47,22 @@ export default function Tooltip({
     }
   }, [])
 
+  useEffect(() => {
+    if (!disabled) return
+    window.clearTimeout(openTimeout.current)
+    window.clearTimeout(closeTimeout.current)
+    closeTimeout.current = window.setTimeout(() => setIsOpen(false), 0)
+    return () => window.clearTimeout(closeTimeout.current)
+  }, [disabled])
+
   const handleMouseEnter = () => {
+    if (disabled) return
     window.clearTimeout(closeTimeout.current)
     openTimeout.current = window.setTimeout(() => setIsOpen(true), delay)
   }
 
   const handleMouseLeave = () => {
+    if (disabled) return
     window.clearTimeout(openTimeout.current)
     closeTimeout.current = window.setTimeout(() => setIsOpen(false), 80)
   }
@@ -62,14 +77,14 @@ export default function Tooltip({
         ref={(node) => refs.setReference(node)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="inline-block"
+        className={cn("inline-block max-w-full", className)}
       >
         {children}
       </div>
 
       {createPortal(
         <AnimatePresence>
-          {isOpen && (
+          {!disabled && isOpen && (
             <motion.div
               ref={(node) => {
                 refs.setFloating(node)
@@ -79,7 +94,7 @@ export default function Tooltip({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.12 }}
-              className="z-50 pointer-events-none px-2 py-1 text-xs bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded shadow-lg whitespace-nowrap"
+              className="max-w-160 z-50 pointer-events-none px-2 py-1 text-xs bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded shadow-lg"
             >
               {content}
             </motion.div>
