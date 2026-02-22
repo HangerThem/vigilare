@@ -61,24 +61,25 @@ export default function Tooltip({
         {children}
       </div>
 
-      {createPortal(
-        <AnimatePresence>
-          {isOpen && (
-            <div ref={tooltipRef} className="z-50 pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
-                className="px-2 py-1 text-xs bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded shadow-lg whitespace-nowrap"
-              >
-                {content}
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <div ref={tooltipRef} className="z-50 pointer-events-none">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  className="px-2 py-1 text-xs bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded shadow-lg whitespace-nowrap"
+                >
+                  {content}
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
     </>
   )
 }
