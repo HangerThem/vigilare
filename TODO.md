@@ -26,7 +26,7 @@
 
 ## Notes panel
 
-- [ ] Markdown preview toggle (lightweight)
+- [x] Markdown preview toggle (lightweight)
 - [ ] Auto save with debounce and "Saving..." indicator
 - [ ] Word/character count for notes
 - [ ] Full-screen editor mode
@@ -37,7 +37,7 @@
 
 ## Status panel
 
-- [ ] Last check time + response time shown inline
+- [x] Last check time + response time shown inline
 - [ ] Manual "Check now" action per status
 - [ ] Uptime history sparkline (last 24h/7d)
 - [ ] Pause monitoring per status

@@ -9,7 +9,7 @@ import { Link } from "@/types/Link.type"
 import { Note } from "@/types/Note.type"
 import { Status } from "@/types/Status.type"
 import { ToastCreate, useToast } from "@/context/ToastContext"
-import * as Icons from "lucide-react"
+import { icons } from "lucide-react"
 
 interface DataManager<T extends { id: string }> {
   items: T[]
@@ -69,7 +69,7 @@ function useDataManager<T extends { id: string }>(
       const toast: ToastCreate = {
         message: "Deleted item",
         actionLabel: "Undo",
-        icon: Icons.Trash2,
+        icon: icons.Trash2,
         ttl: 5000,
         action: () => {
           const itemToRestore = items.find((item) => item.id === id)

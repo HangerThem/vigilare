@@ -1,4 +1,5 @@
 import { Info } from "lucide-react"
+import Tooltip from "./Tooltip"
 
 interface ToggleProps {
   checked: boolean
@@ -18,9 +19,9 @@ export default function Toggle({
       <span className="text-sm flex items-center gap-1">
         {label}
         {description && (
-          <span title={description}>
-            <Info size="10" className="text-[rgb(var(--muted))]" />
-          </span>
+          <Tooltip content={description}>
+            <Info size={12} className="text-[rgb(var(--muted))]" />
+          </Tooltip>
         )}
       </span>
 

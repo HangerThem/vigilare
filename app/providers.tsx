@@ -47,10 +47,10 @@ function AutoBackupManager({ children }: { children: ReactNode }) {
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <SettingsProvider>
-      <MotionWrapper>
+    <ToastProvider>
+      <SettingsProvider>
         <ThemeProvider>
-          <ToastProvider>
+          <MotionWrapper>
             <ModalOpenProvider>
               <ConfirmDialogProvider>
                 <DataProvider>
@@ -58,9 +58,9 @@ export function Providers({ children }: { children: ReactNode }) {
                 </DataProvider>
               </ConfirmDialogProvider>
             </ModalOpenProvider>
-          </ToastProvider>
+          </MotionWrapper>
         </ThemeProvider>
-      </MotionWrapper>
-    </SettingsProvider>
+      </SettingsProvider>
+    </ToastProvider>
   )
 }

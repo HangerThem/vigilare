@@ -5,6 +5,8 @@ import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import { createContext, useContext, useEffect, useState } from "react"
 import { ModalName } from "@/context/ModalContext"
 import useIsMac from "@/hook/useIsMac"
+import { useToast } from "./ToastContext"
+import { icons } from "lucide-react"
 
 export type ShortcutName =
   | "openCommandPalette"
@@ -127,6 +129,7 @@ const SettingsContext = createContext<SettingsContextType | null>(null)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const isMac = useIsMac()
+  const { addToast } = useToast()
   const [isDisableShortcuts, setIsDisableShortcuts] = useState(false)
   const platformShortcuts: Shortcuts = Object.fromEntries(
     Object.entries(defaultShortcuts).map(([name, shortcut]) => [
@@ -203,6 +206,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings({
       ...defaultSettings,
       shortcuts: platformShortcuts,
+    })
+    addToast({
+      message: "Settings have been reset to default",
+      icon: icons.Check,
     })
   }
 

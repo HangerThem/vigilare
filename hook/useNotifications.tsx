@@ -41,7 +41,9 @@ const getPermission = (): NotificationPermission =>
     : "default"
 const getServerPermission = (): NotificationPermission => "default"
 
-async function checkStatus(status: Status): Promise<"up" | "down"> {
+async function checkStatus(
+  status: Status,
+): Promise<{ state: "up" | "down"; responseTime: number }> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
@@ -52,12 +54,12 @@ async function checkStatus(status: Status): Promise<"up" | "down"> {
 
     if (res.ok) {
       clearTimeout(timeoutId)
-      return "up"
+      return { state: "up", responseTime: (await res.json()).responseTime }
     }
 
-    return "down"
+    return { state: "down", responseTime: 0 }
   } catch {
-    return "down"
+    return { state: "down", responseTime: 0 }
   }
 }
 
@@ -176,15 +178,17 @@ export function useNotifications(
       const newState = await checkStatus(status)
       const previousState = status.state
 
-      if (previousState !== "unknown" && previousState !== newState) {
+      if (previousState !== "unknown" && previousState !== newState.state) {
         if (notificationsEnabledRef.current) {
-          await showNotification(status, previousState, newState)
+          await showNotification(status, previousState, newState.state)
         }
       }
 
       updatedStatuses.push({
         ...status,
-        state: newState,
+        state: newState.state,
+        responseTime: newState.responseTime,
+        lastChecked: new Date().toISOString(),
       })
     }
 

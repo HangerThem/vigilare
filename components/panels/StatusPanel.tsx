@@ -18,6 +18,7 @@ import { useOnline } from "@/hook/useOnline"
 import StatusItem from "@/components/panels/items/StatusItem"
 import { useSettings } from "@/context/SettingsContext"
 import { Status } from "@/types/Status.type"
+import Tooltip from "../ui/Tooltip"
 
 export function StatusPanel() {
   const listRef = useRef<HTMLDivElement>(null)
@@ -156,36 +157,42 @@ export function StatusPanel() {
         <div className="flex items-center gap-2 ml-auto order-2 sm:order-3">
           {isSupported && (
             <div className="hidden sm:flex items-center gap-2">
-              <Select
-                options={[
-                  { value: 60000, label: "1 mins" },
-                  { value: 900000, label: "15 mins" },
-                  { value: 3600000, label: "60 mins" },
-                ]}
-                value={checkInterval}
-                onChange={(value) => setCheckInterval(Number(value))}
-                className="w-28 sm:w-32"
-              />
-              <Button
-                onClick={toggleNotifications}
-                className={
-                  notificationsEnabled
-                    ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
-                    : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
-                }
-                variant="secondary"
-                title={
+              <Tooltip content="Check interval" delay={500}>
+                <Select
+                  options={[
+                    { value: 60000, label: "1 mins" },
+                    { value: 900000, label: "15 mins" },
+                    { value: 3600000, label: "60 mins" },
+                  ]}
+                  value={checkInterval}
+                  onChange={(value) => setCheckInterval(Number(value))}
+                  className="w-28 sm:w-32"
+                />
+              </Tooltip>
+              <Tooltip
+                content={
                   notificationsEnabled
                     ? "Notifications enabled - Click to disable"
                     : "Enable notifications for status changes"
                 }
+                delay={500}
               >
-                {notificationsEnabled ? (
-                  <Bell size={20} />
-                ) : (
-                  <BellOff size={20} />
-                )}
-              </Button>
+                <Button
+                  onClick={toggleNotifications}
+                  className={
+                    notificationsEnabled
+                      ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
+                      : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
+                  }
+                  variant="secondary"
+                >
+                  {notificationsEnabled ? (
+                    <Bell size={20} />
+                  ) : (
+                    <BellOff size={20} />
+                  )}
+                </Button>
+              </Tooltip>
             </div>
           )}
           <Button
@@ -224,26 +231,30 @@ export function StatusPanel() {
               onChange={(value) => setCheckInterval(Number(value))}
               className="flex-1"
             />
-            <Button
-              onClick={toggleNotifications}
-              className={
-                notificationsEnabled
-                  ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
-                  : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
-              }
-              variant="secondary"
-              title={
+            <Tooltip
+              content={
                 notificationsEnabled
                   ? "Notifications enabled - Click to disable"
                   : "Enable notifications for status changes"
               }
+              delay={500}
             >
-              {notificationsEnabled ? (
-                <Bell size={20} />
-              ) : (
-                <BellOff size={20} />
-              )}
-            </Button>
+              <Button
+                onClick={toggleNotifications}
+                className={
+                  notificationsEnabled
+                    ? "border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:border-green-600"
+                    : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
+                }
+                variant="secondary"
+              >
+                {notificationsEnabled ? (
+                  <Bell size={20} />
+                ) : (
+                  <BellOff size={20} />
+                )}
+              </Button>
+            </Tooltip>
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
 import { Button } from "@/components/ui/Button"
 import { Menu, Search, Settings, SquareChevronRight } from "lucide-react"
+import Tooltip from "../ui/Tooltip"
 
 export function Header() {
   const { theme, toggleTheme, getIcon, getTitle } = useTheme()
@@ -26,34 +27,32 @@ export function Header() {
         </h1>
 
         <div className="hidden sm:flex items-center gap-2">
-          <Button
-            onClick={() => openModal("globalSearch")}
-            title="Search"
-            variant="secondary"
-          >
-            <Search size={iconSize} />
-          </Button>
-          <Button
-            onClick={() => openModal("settings")}
-            title="Settings"
-            variant="secondary"
-          >
-            <Settings size={iconSize} />
-          </Button>
-          <Button
-            onClick={() => openModal("commandPalette")}
-            title="Command Palette"
-            variant="secondary"
-          >
-            <SquareChevronRight size={iconSize} />
-          </Button>
-          <Button
-            onClick={toggleTheme}
-            title={getTitle(theme)}
-            variant="secondary"
-          >
-            {getIcon(theme, iconSize)}
-          </Button>
+          <Tooltip content="Search" delay={500}>
+            <Button
+              onClick={() => openModal("globalSearch")}
+              variant="secondary"
+            >
+              <Search size={iconSize} />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Settings" delay={500}>
+            <Button onClick={() => openModal("settings")} variant="secondary">
+              <Settings size={iconSize} />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Command Palette" delay={500}>
+            <Button
+              onClick={() => openModal("commandPalette")}
+              variant="secondary"
+            >
+              <SquareChevronRight size={iconSize} />
+            </Button>
+          </Tooltip>
+          <Tooltip content={getTitle(theme)} delay={500}>
+            <Button onClick={toggleTheme} variant="secondary">
+              {getIcon(theme, iconSize)}
+            </Button>
+          </Tooltip>
         </div>
 
         <div className="flex sm:hidden items-center gap-2">

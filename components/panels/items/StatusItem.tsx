@@ -1,11 +1,13 @@
 import { motion } from "framer-motion"
-import { GripVertical, Pencil, Trash } from "lucide-react"
+import { GripVertical, Info, Pencil, Trash } from "lucide-react"
 import { useModal } from "@/context/ModalContext"
 import LinkWithSettings from "@/components/common/LinkWithSettings"
 import { useSettings } from "@/context/SettingsContext"
 import { useStatuses } from "@/context/DataContext"
 import { Status } from "@/types/Status.type"
 import { STATE_META } from "@/const/State"
+import Tooltip from "@/components/ui/Tooltip"
+import { format } from "date-fns"
 
 interface StatusItemProps {
   status: Status
@@ -63,11 +65,25 @@ export default function StatusItem({ status }: StatusItemProps) {
         />
 
         <div className="mr-auto min-w-0 flex-1">
-          <span className={`block font-medium ${compact ? "text-sm" : ""}`}>
+          <span
+            className={`flex gap-2 items-center font-medium ${compact ? "text-sm" : ""}`}
+          >
             {status.title}
+            <Tooltip
+              content={
+                <>
+                  Last checked: {format(new Date(status.lastChecked!), "pp")}
+                  <br />
+                  Response time: {status.responseTime} ms
+                </>
+              }
+            >
+              <Info size={12} className="text-[rgb(var(--muted))]" />
+            </Tooltip>
+
             {status.variant && (
               <span
-                className={`ml-2 text-xs px-1.5 py-0.5 rounded bg-[rgb(var(--border))] text-[rgb(var(--muted))] uppercase ${compact ? "text-[10px] px-1 py-0" : ""}`}
+                className={`text-xs px-1.5 py-0.5 rounded bg-[rgb(var(--border))] text-[rgb(var(--muted))] uppercase ${compact ? "text-[10px] px-1 py-0" : ""}`}
               >
                 {status.variant}
               </span>

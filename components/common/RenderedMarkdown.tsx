@@ -106,7 +106,7 @@ export function RenderedMarkdown({
       components={{
         a: ({ children, href, ...props }) => {
           const match = href?.match(
-            /^backlink:(note|command|link|status):(.+)$/,
+            /^backlink:(note|snippet|link|status):(.+)$/,
           )
           if (match) {
             if (isPreview) {
@@ -120,7 +120,7 @@ export function RenderedMarkdown({
               <button
                 type="button"
                 onClick={() => openBacklink(match[1], match[2])}
-                className="underline text-[rgb(var(--primary))] underline-offset-2 cursor-pointer"
+                className="underline text-[rgb(var(--primary))] underline-offset-2 cursor-pointer select-text"
               >
                 {children}
               </button>

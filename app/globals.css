@@ -64,6 +64,15 @@ html.disable-animations *::after,
 html.disable-animations *:not([data-popper-placement]),
 .disable-animations *:not([data-popper-placement]) {
   transform: none !important;
+  transition: none !important;
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation: none !important;
+  animation-name: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  opacity: 1 !important;
 }
 
 body {

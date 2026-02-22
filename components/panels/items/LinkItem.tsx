@@ -86,7 +86,7 @@ export default function LinkItem({ link }: LinkItemProps) {
       <div className="mr-auto min-w-0 flex-1">
         <LinkWithSettings
           href={link.url}
-          className={`flex items-center gap-1 block font-medium ${compact ? "text-sm" : ""}`}
+          className={`w-fit flex items-center gap-1 block font-medium ${compact ? "text-sm" : ""}`}
         >
           {faviconUrl && (
             <Image

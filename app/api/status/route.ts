@@ -9,16 +9,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const start = Date.now()
     const res = await fetch(`https://${domain}`, {
       method: "HEAD",
       cache: "no-store",
     })
+    const responseTime = Date.now() - start
 
     if (!res.ok) {
       return new NextResponse("Domain not found", { status: 404 })
     }
 
-    return new NextResponse("Domain found", { status: 200 })
+    return NextResponse.json(
+      {
+        message: "Domain found",
+        responseTime,
+      },
+      { status: 200 },
+    )
   } catch (error) {
     return new NextResponse("Failed to fetch domain", {
       status: 500,
