@@ -29,7 +29,7 @@ export interface UseNotificationsReturn {
   disableNotifications: () => void
 }
 
-const DEFAULT_CHECK_INTERVAL = 15000
+const DEFAULT_CHECK_INTERVAL = 60000
 
 const emptySubscribe = () => () => {}
 const getIsSupported = () =>
@@ -46,11 +46,9 @@ async function checkStatus(status: Status): Promise<"up" | "down"> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-    const res = await fetch(status.url, {
-      method: "HEAD",
-      signal: controller.signal,
-      cache: "no-store",
-    })
+    const domain = new URL(status.url).hostname
+
+    const res = await fetch(`/status?domain=${domain}`)
 
     if (res.ok) {
       clearTimeout(timeoutId)

@@ -45,6 +45,10 @@ const nextConfig: NextConfig = {
         source: "/favicon",
         destination: "/api/favicon",
       },
+      {
+        source: "/status",
+        destination: "/api/status",
+      },
     ]
   },
   images: {

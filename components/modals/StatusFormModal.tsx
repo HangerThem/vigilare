@@ -17,6 +17,7 @@ type StatusFormData = Omit<Status, "id" | "state" | "type">
 const defaultValues: StatusFormData = {
   title: "",
   url: "",
+  variant: undefined,
 }
 
 export default function StatusFormModal() {

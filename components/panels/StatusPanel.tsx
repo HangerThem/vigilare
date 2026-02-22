@@ -158,8 +158,6 @@ export function StatusPanel() {
             <div className="hidden sm:flex items-center gap-2">
               <Select
                 options={[
-                  { value: 5000, label: "5 secs" },
-                  { value: 30000, label: "30 secs" },
                   { value: 60000, label: "1 mins" },
                   { value: 900000, label: "15 mins" },
                   { value: 3600000, label: "60 mins" },

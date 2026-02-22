@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const faviconUrl = new URL(`https://${domain}`)
-    faviconUrl.pathname = "/favicon.ico"
+    faviconUrl.pathname = "/favicon"
 
     const res = await fetch(faviconUrl.toString())
     if (!res.ok) {
