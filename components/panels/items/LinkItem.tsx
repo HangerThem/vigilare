@@ -96,6 +96,7 @@ export default function LinkItem({ link }: LinkItemProps) {
               height={16}
               className="inline mr-1"
               onError={() => setFaviconUrl("")}
+              unoptimized
             />
           )}
           {link.title}

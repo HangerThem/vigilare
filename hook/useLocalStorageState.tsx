@@ -1,113 +1,69 @@
-import { useCallback, useMemo, useSyncExternalStore } from "react"
+"use client"
 
-const listeners = new Map<string, Set<() => void>>()
+import { useCallback, useEffect, useMemo, useState } from "react"
+import {
+  notifyStorageKeyListeners,
+  subscribeStorageGlobal,
+  subscribeStorageKey,
+} from "@/utils/storageListeners"
 
-function notifyListeners(key: string) {
-  const keyListeners = listeners.get(key)
-  if (keyListeners) {
-    keyListeners.forEach((callback) => callback())
-  }
-  const allListeners = listeners.get("__all__")
-  if (allListeners) {
-    allListeners.forEach((callback) => callback())
-  }
-}
+function readValue<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback
 
-export function notifyAllStorageListeners() {
-  const allListeners = listeners.get("__all__")
-  if (allListeners) {
-    allListeners.forEach((callback) => callback())
+  try {
+    const stored = localStorage.getItem(key)
+    return stored === null ? fallback : (JSON.parse(stored) as T)
+  } catch {
+    return fallback
   }
 }
 
 export function useLocalStorageState<T>(key: string, initialValue: T) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const initialValueSerialized = useMemo(() => JSON.stringify(initialValue), [])
+  const fallback = useMemo(() => initialValue, [initialValue])
+  const initialJson = useMemo(() => JSON.stringify(initialValue), [initialValue])
 
-  const subscribe = useCallback(
-    (callback: () => void) => {
-      if (!listeners.has(key)) {
-        listeners.set(key, new Set())
-      }
-      listeners.get(key)!.add(callback)
+  const [value, setValue] = useState<T>(() => readValue(key, fallback))
 
-      if (!listeners.has("__all__")) {
-        listeners.set("__all__", new Set())
-      }
-      listeners.get("__all__")!.add(callback)
+  useEffect(() => {
+    const refresh = () => setValue(readValue(key, fallback))
 
-      const handler = (e: StorageEvent) => {
-        if (e.key === key || e.key === null) callback()
-      }
-      window.addEventListener("storage", handler)
+    const unsubscribeKey = subscribeStorageKey(key, refresh)
+    const unsubscribeGlobal = subscribeStorageGlobal(refresh)
 
-      return () => {
-        listeners.get(key)?.delete(callback)
-        listeners.get("__all__")?.delete(callback)
-        window.removeEventListener("storage", handler)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === key || e.key === null) refresh()
+    }
+    window.addEventListener("storage", onStorage)
+
+    return () => {
+      unsubscribeKey()
+      unsubscribeGlobal()
+      window.removeEventListener("storage", onStorage)
+    }
+  }, [key, fallback])
+
+  const persist = useCallback(
+    (next: T) => {
+      if (typeof window === "undefined") return
+      try {
+        localStorage.setItem(key, JSON.stringify(next))
+      } catch (error) {
+        console.error("Failed to save to localStorage:", error)
       }
     },
     [key],
   )
 
-  const getSnapshot = useCallback(() => {
-    if (typeof window === "undefined") {
-      return initialValueSerialized
-    }
-    try {
-      const item = localStorage.getItem(key)
-      return item ?? initialValueSerialized
-    } catch {
-      return initialValueSerialized
-    }
-  }, [key, initialValueSerialized])
-
-  const getServerSnapshot = useCallback(
-    () => initialValueSerialized,
-    [initialValueSerialized],
-  )
-
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
-
-  const value = useMemo(() => {
-    try {
-      return JSON.parse(raw) as T
-    } catch {
-      return JSON.parse(initialValueSerialized) as T
-    }
-  }, [raw, initialValueSerialized])
-
-  const notify = useCallback(() => {
-    notifyListeners(key)
-  }, [key])
-
-  const setValue = useCallback(
-    (newValue: T | ((prev: T) => T)) => {
-      if (typeof window === "undefined") return
-
-      const prev = (() => {
-        try {
-          return JSON.parse(
-            localStorage.getItem(key) ?? initialValueSerialized,
-          ) as T
-        } catch {
-          return JSON.parse(initialValueSerialized) as T
-        }
-      })()
-
-      const valueToStore =
-        typeof newValue === "function"
-          ? (newValue as (p: T) => T)(prev)
-          : newValue
-
-      try {
-        localStorage.setItem(key, JSON.stringify(valueToStore))
-        notify()
-      } catch (error) {
-        console.error("Failed to save to localStorage:", error)
-      }
+  const setStoredValue = useCallback(
+    (next: T | ((prev: T) => T)) => {
+      setValue((prev) => {
+        const resolved = typeof next === "function" ? (next as (p: T) => T)(prev) : next
+        persist(resolved)
+        notifyStorageKeyListeners(key)
+        return resolved
+      })
     },
-    [key, notify, initialValueSerialized],
+    [key, persist],
   )
 
   const exportValue = useCallback(() => {
@@ -119,20 +75,28 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     (raw: string) => {
       if (typeof window === "undefined") return
       localStorage.setItem(key, raw)
-      notify()
+      notifyStorageKeyListeners(key)
+      setValue(() => {
+        try {
+          return JSON.parse(raw) as T
+        } catch {
+          return JSON.parse(initialJson) as T
+        }
+      })
     },
-    [key, notify],
+    [key, initialJson],
   )
 
   const clear = useCallback(() => {
     if (typeof window === "undefined") return
     localStorage.removeItem(key)
-    notify()
-  }, [key, notify])
+    notifyStorageKeyListeners(key)
+    setValue(fallback)
+  }, [key, fallback])
 
   return {
     value,
-    setValue,
+    setValue: setStoredValue,
     export: exportValue,
     import: importValue,
     clear,

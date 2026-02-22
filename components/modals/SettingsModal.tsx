@@ -110,6 +110,8 @@ export default function SettingsModal() {
     { id: "shortcuts" as const, label: "Shortcuts" },
     { id: "advanced" as const, label: "Advanced" },
   ]
+  const isMobileUserAgent =
+    typeof navigator !== "undefined" && navigator.userAgent.includes("Mobi")
 
   useEffect(() => {
     if (!editingShortcut) return
@@ -188,8 +190,7 @@ export default function SettingsModal() {
 
         <div className="flex gap-1 mb-4 sm:mb-6 border-b border-[rgb(var(--border))] overflow-x-auto">
           {tabs.map((tab) =>
-            navigator.userAgent.includes("Mobi") &&
-            tab.id === "shortcuts" ? null : (
+            isMobileUserAgent && tab.id === "shortcuts" ? null : (
               <button
                 key={tab.id}
                 onClick={() => {
