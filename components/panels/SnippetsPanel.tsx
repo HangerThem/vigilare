@@ -13,12 +13,14 @@ import { useSettings } from "@/context/SettingsContext"
 import { useSnippets } from "@/context/DataContext"
 import SnippetItem from "@/components/panels/items/SnippetItem"
 import SnippetFormModal from "../modals/SnippetFormModal"
+import { useSync } from "@/context/SyncContext"
 
 export function SnippetsPanel() {
   const listRef = useRef<HTMLUListElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
   const { items: snippets, reorder } = useSnippets()
   const { settings } = useSettings()
+  const { isReadOnly } = useSync()
 
   const { openModal } = useModal()
 
@@ -32,6 +34,14 @@ export function SnippetsPanel() {
   )
 
   useEffect(() => {
+    if (isReadOnly) {
+      if (sortableRef.current) {
+        sortableRef.current.destroy()
+        sortableRef.current = null
+      }
+      return
+    }
+
     if (listRef.current && !sortableRef.current) {
       sortableRef.current = SortableJS.create(listRef.current, {
         animation: 150,
@@ -45,7 +55,7 @@ export function SnippetsPanel() {
         sortableRef.current = null
       }
     }
-  }, [handleSortEnd])
+  }, [handleSortEnd, isReadOnly])
 
   const filteredSnippets = useMemo(() => {
     if (searchQuery.trim() === "") return snippets
@@ -84,6 +94,11 @@ export function SnippetsPanel() {
         >
           Snippets
         </h2>
+        {isReadOnly && (
+          <span className="text-xs rounded-full border border-amber-500/50 px-2 py-1 text-amber-300">
+            Read-only
+          </span>
+        )}
 
         <div className="mr-auto order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
@@ -98,10 +113,12 @@ export function SnippetsPanel() {
 
         <Button
           onClick={() => {
+            if (isReadOnly) return
             openModal("snippets")
           }}
           variant="secondary"
           className="order-2 sm:order-3 ml-auto sm:ml-0"
+          disabled={isReadOnly}
         >
           <Plus size={20} />
         </Button>

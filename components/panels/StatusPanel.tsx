@@ -19,6 +19,7 @@ import StatusItem from "@/components/panels/items/StatusItem"
 import { useSettings } from "@/context/SettingsContext"
 import { Status } from "@/types/Status.type"
 import Tooltip from "../ui/Tooltip"
+import { useSync } from "@/context/SyncContext"
 
 export function StatusPanel() {
   const listRef = useRef<HTMLDivElement>(null)
@@ -33,9 +34,12 @@ export function StatusPanel() {
   const [searchQuery, setSearchQuery] = useState<string>("")
   const isOnline = useOnline()
   const { settings } = useSettings()
+  const { isReadOnly } = useSync()
 
   const handleStatusUpdateFromSW = useCallback(
     (updatedStatuses: Status[]) => {
+      if (isReadOnly) return
+
       const updatesById = new Map(
         updatedStatuses.map((status) => [
           status.id,
@@ -54,7 +58,7 @@ export function StatusPanel() {
         }),
       )
     },
-    [setStatuses],
+    [isReadOnly, setStatuses],
   )
 
   const {
@@ -71,18 +75,27 @@ export function StatusPanel() {
   } = useNotifications(handleStatusUpdateFromSW)
 
   useEffect(() => {
+    if (isReadOnly) {
+      if (isMonitoring) {
+        stopMonitoring()
+      }
+      return
+    }
+
     if (statuses.length > 0 && !isMonitoring) {
       startMonitoring(statuses)
     } else if (statuses.length === 0 && isMonitoring) {
       stopMonitoring()
     }
-  }, [statuses, isMonitoring, startMonitoring, stopMonitoring])
+  }, [isReadOnly, statuses, isMonitoring, startMonitoring, stopMonitoring])
 
   useEffect(() => {
+    if (isReadOnly) return
+
     if (isMonitoring && statuses.length > 0) {
       updateStatuses(statuses)
     }
-  }, [statuses, isMonitoring, updateStatuses])
+  }, [isReadOnly, statuses, isMonitoring, updateStatuses])
 
   const handleSortEnd = useCallback(
     (evt: SortableJS.SortableEvent) => {
@@ -92,6 +105,14 @@ export function StatusPanel() {
   )
 
   useEffect(() => {
+    if (isReadOnly) {
+      if (sortableRef.current) {
+        sortableRef.current.destroy()
+        sortableRef.current = null
+      }
+      return
+    }
+
     if (listRef.current && !sortableRef.current) {
       sortableRef.current = SortableJS.create(listRef.current, {
         animation: 150,
@@ -105,7 +126,7 @@ export function StatusPanel() {
         sortableRef.current = null
       }
     }
-  }, [handleSortEnd])
+  }, [handleSortEnd, isReadOnly])
 
   const toggleNotifications = useCallback(async () => {
     if (notificationsEnabled) {
@@ -163,6 +184,11 @@ export function StatusPanel() {
           >
             Statuses
           </h2>
+          {isReadOnly && (
+            <span className="text-xs rounded-full border border-amber-500/50 px-2 py-1 text-amber-300">
+              Read-only
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2 ml-auto order-2 sm:order-3">
@@ -178,6 +204,7 @@ export function StatusPanel() {
                   value={checkInterval}
                   onChange={(value) => setCheckInterval(Number(value))}
                   className="w-28 sm:w-32"
+                  disabled={isReadOnly}
                 />
               </Tooltip>
               <Tooltip
@@ -196,6 +223,7 @@ export function StatusPanel() {
                       : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
                   }
                   variant="secondary"
+                  disabled={isReadOnly}
                 >
                   {notificationsEnabled ? (
                     <Bell size={20} />
@@ -208,10 +236,12 @@ export function StatusPanel() {
           )}
           <Button
             onClick={() => {
+              if (isReadOnly) return
               setEditingId(null)
               openModal("status")
             }}
             variant="secondary"
+            disabled={isReadOnly}
           >
             <Plus size={20} />
           </Button>
@@ -241,6 +271,7 @@ export function StatusPanel() {
               value={checkInterval}
               onChange={(value) => setCheckInterval(Number(value))}
               className="flex-1"
+              disabled={isReadOnly}
             />
             <Tooltip
               content={
@@ -258,6 +289,7 @@ export function StatusPanel() {
                     : "border-[rgb(var(--border))] text-[rgb(var(--muted))] hover:border-[rgb(var(--border-hover))]"
                 }
                 variant="secondary"
+                disabled={isReadOnly}
               >
                 {notificationsEnabled ? (
                   <Bell size={20} />

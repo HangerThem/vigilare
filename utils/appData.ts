@@ -79,7 +79,6 @@ export function exportAppData(): string {
  */
 export function exportSettings(): string {
   const value = localStorage.getItem(SETTINGS_KEY)
-  console.log("Exporting settings:", value)
   if (value === null) {
     return "{}"
   }

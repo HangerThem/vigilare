@@ -5,6 +5,7 @@ import GlobalSearchModal from "@/components/modals/GlobalSearchModal"
 import ShortcutsModal from "@/components/modals/ShortcutsModal"
 import SettingsModal from "@/components/modals/SettingsModal"
 import ConfirmModal from "@/components/modals/ConfirmModal"
+import SyncModal from "@/components/modals/SyncModal"
 
 export default function Modals() {
   return (
@@ -13,6 +14,7 @@ export default function Modals() {
       <GlobalSearchModal />
       <ShortcutsModal />
       <SettingsModal />
+      <SyncModal />
       <ConfirmModal />
     </>
   )

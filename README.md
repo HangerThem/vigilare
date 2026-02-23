@@ -12,6 +12,7 @@ A customizable productivity dashboard built with Next.js for managing your daily
 - **Command Palette** - Fast actions with `Ctrl/Cmd + K`
 - **Theme Support** - Light, Dark, and System theme modes
 - **Data Portability** - Export and import your data as JSON
+- **Optional Remote Workspaces** - Account-backed workspace sharing with role-based invites (admin/editor/viewer) and Auth.js credentials/passkey sign-in
 - **Drag & Drop** - Reorder items within panels
 - **Offline Detection** - Visual indicator when offline
 
@@ -80,7 +81,37 @@ pnpm start
 
 ## Data Storage
 
-All data is stored locally in your browser's localStorage. No data is sent to external servers.
+Vigilare always supports accountless local mode using browser localStorage.
+
+### Optional Sync Mode (V4)
+
+Vigilare includes optional account-backed remote workspaces (disabled by default):
+- Local mode works without an account.
+- Remote workspace create/join/share/edit requires authentication.
+- Auth supports passkey, credentials, or both.
+- Workspace membership is role-based (`admin`, `editor`, `viewer`) and remains until removed.
+
+Required environment variables:
+
+- `NEXT_PUBLIC_SYNC_ENABLED=true`
+- `DATABASE_URL=<your-postgres-connection-url>`
+- `AUTH_SECRET=<server-side-random-secret>`
+- `SMTP_HOST=<smtp-host>`
+- `SMTP_PORT=<smtp-port>`
+- `SMTP_USER=<smtp-username>`
+- `SMTP_PASSWORD=<smtp-password>`
+- `EMAIL_FROM=<from-email-address>`
+
+Optional passkey config:
+
+- `WEBAUTHN_RP_NAME=<friendly-name>`
+- `WEBAUTHN_RP_ID=<rp-id>`
+- `WEBAUTHN_ORIGIN=<https-origin>`
+
+Initialize Prisma client and schema:
+
+- `pnpm exec prisma generate`
+- `pnpm exec prisma db push`
 
 ### Export & Import
 

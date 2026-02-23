@@ -10,6 +10,8 @@ import { Note } from "@/types/Note.type"
 import { Status } from "@/types/Status.type"
 import { ToastCreate, useToast } from "@/context/ToastContext"
 import { icons } from "lucide-react"
+import { useSync } from "@/context/SyncContext"
+import { SyncCollectionKey, SyncDataCollections } from "@/utils/sync/mappers"
 
 interface DataManager<T extends { id: string }> {
   items: T[]
@@ -35,6 +37,7 @@ const DataContext = createContext<DataContextType | null>(null)
 
 function useDataManager<T extends { id: string }>(
   storageKey: string,
+  syncKey: SyncCollectionKey,
   initialValue: T[],
   confirmTitle: string,
   confirmMessage: string,
@@ -42,10 +45,38 @@ function useDataManager<T extends { id: string }>(
   const { addToast } = useToast()
   const { settings } = useSettings()
   const { confirm } = useConfirmDialog()
-  const { value: items, setValue: setItems } = useLocalStorageState<T[]>(
+  const sync = useSync()
+
+  const { value: localItems, setValue: setLocalItems } = useLocalStorageState<T[]>(
     storageKey,
     initialValue,
   )
+
+  const items =
+    sync.syncEnabled && sync.isConnected
+      ? (sync.getCollection(syncKey) as unknown as T[])
+      : localItems
+
+  const setItems = useCallback(
+    (next: T[] | ((prev: T[]) => T[])) => {
+      if (sync.syncEnabled && sync.isConnected) {
+        sync.updateCollection(syncKey, (prev) => {
+          const typedPrev = prev as unknown as T[]
+          const resolved =
+            typeof next === "function"
+              ? (next as (input: T[]) => T[])(typedPrev)
+              : next
+
+          return resolved as unknown as SyncDataCollections[typeof syncKey]
+        })
+        return
+      }
+
+      setLocalItems(next)
+    },
+    [setLocalItems, sync, syncKey],
+  )
+
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const add = useCallback(
@@ -143,11 +174,13 @@ function useDataManager<T extends { id: string }>(
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const snippets = useDataManager<Snippet>(
     "snippets",
+    "snippets",
     [],
     "Delete Snippet",
     "Are you sure you want to delete this snippet?",
   )
   const links = useDataManager<Link>(
+    "links",
     "links",
     [],
     "Delete Link",
@@ -155,11 +188,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   )
   const notes = useDataManager<Note>(
     "notes",
+    "notes",
     [],
     "Delete Note",
     "Are you sure you want to delete this note?",
   )
   const statuses = useDataManager<Status>(
+    "statuses",
     "statuses",
     [],
     "Delete Status",

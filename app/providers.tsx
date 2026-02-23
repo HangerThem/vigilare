@@ -4,6 +4,7 @@ import { ConfirmDialogProvider } from "@/context/ConfirmDialogContext"
 import { DataProvider } from "@/context/DataContext"
 import { ModalOpenProvider } from "@/context/ModalContext"
 import { SettingsProvider, useSettings } from "@/context/SettingsContext"
+import { SyncProvider } from "@/context/SyncContext"
 import { ThemeProvider } from "@/context/ThemeContext"
 import { useAutoBackup } from "@/hook/useAutoBackup"
 import { ReactNode, useEffect, createContext, useContext } from "react"
@@ -53,9 +54,11 @@ export function Providers({ children }: { children: ReactNode }) {
           <MotionWrapper>
             <ModalOpenProvider>
               <ConfirmDialogProvider>
-                <DataProvider>
-                  <AutoBackupManager>{children}</AutoBackupManager>
-                </DataProvider>
+                <SyncProvider>
+                  <DataProvider>
+                    <AutoBackupManager>{children}</AutoBackupManager>
+                  </DataProvider>
+                </SyncProvider>
               </ConfirmDialogProvider>
             </ModalOpenProvider>
           </MotionWrapper>

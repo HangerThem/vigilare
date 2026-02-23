@@ -13,6 +13,7 @@ import { useModal } from "@/context/ModalContext"
 import { Input } from "@/components/ui/Input"
 import NoteItem from "@/components/panels/items/NoteItem"
 import { useSettings } from "@/context/SettingsContext"
+import { useSync } from "@/context/SyncContext"
 
 export function NotesPanel() {
   const listRef = useRef<HTMLUListElement>(null)
@@ -21,6 +22,7 @@ export function NotesPanel() {
   const { openModal } = useModal()
   const [searchQuery, setSearchQuery] = useState<string>("")
   const { settings } = useSettings()
+  const { isReadOnly } = useSync()
 
   const handleSortEnd = useCallback(
     (evt: SortableJS.SortableEvent) => {
@@ -30,6 +32,14 @@ export function NotesPanel() {
   )
 
   useEffect(() => {
+    if (isReadOnly) {
+      if (sortableRef.current) {
+        sortableRef.current.destroy()
+        sortableRef.current = null
+      }
+      return
+    }
+
     if (listRef.current && !sortableRef.current) {
       sortableRef.current = SortableJS.create(listRef.current, {
         animation: 150,
@@ -43,7 +53,7 @@ export function NotesPanel() {
         sortableRef.current = null
       }
     }
-  }, [handleSortEnd])
+  }, [handleSortEnd, isReadOnly])
 
   const filteredNotes = useMemo(() => {
     if (searchQuery.trim() === "") return notes
@@ -82,6 +92,11 @@ export function NotesPanel() {
         >
           Notes
         </h2>
+        {isReadOnly && (
+          <span className="text-xs rounded-full border border-amber-500/50 px-2 py-1 text-amber-300">
+            Read-only
+          </span>
+        )}
 
         <div className="mr-auto order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-56 flex items-center gap-2 p-2 text-sm border border-[rgb(var(--border))] rounded-lg focus-within:border-[rgb(var(--border-hover))] transition-colors">
           <Input
@@ -96,10 +111,12 @@ export function NotesPanel() {
 
         <Button
           onClick={() => {
+            if (isReadOnly) return
             openModal("notes")
           }}
           variant="secondary"
           className="order-2 sm:order-3 ml-auto sm:ml-0"
+          disabled={isReadOnly}
         >
           <Plus size={20} />
         </Button>

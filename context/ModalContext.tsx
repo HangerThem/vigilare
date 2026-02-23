@@ -11,6 +11,7 @@ export type ModalName =
   | "globalSearch"
   | "shortcuts"
   | "settings"
+  | "syncHub"
   | "confirm"
 
 type ModalAddContextType = {
