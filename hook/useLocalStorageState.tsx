@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   notifyStorageKeyListeners,
   subscribeStorageGlobal,
@@ -22,10 +22,21 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
   const fallback = useMemo(() => initialValue, [initialValue])
   const initialJson = useMemo(() => JSON.stringify(initialValue), [initialValue])
 
-  const [value, setValue] = useState<T>(() => readValue(key, fallback))
+  const [value, setValue] = useState<T>(fallback)
+  const valueRef = useRef(value)
 
   useEffect(() => {
-    const refresh = () => setValue(readValue(key, fallback))
+    valueRef.current = value
+  }, [value])
+
+  useEffect(() => {
+    const refresh = () => {
+      const next = readValue(key, fallback)
+      valueRef.current = next
+      setValue(next)
+    }
+
+    const initialSyncTimeout = window.setTimeout(refresh, 0)
 
     const unsubscribeKey = subscribeStorageKey(key, refresh)
     const unsubscribeGlobal = subscribeStorageGlobal(refresh)
@@ -36,6 +47,7 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     window.addEventListener("storage", onStorage)
 
     return () => {
+      window.clearTimeout(initialSyncTimeout)
       unsubscribeKey()
       unsubscribeGlobal()
       window.removeEventListener("storage", onStorage)
@@ -56,12 +68,14 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
 
   const setStoredValue = useCallback(
     (next: T | ((prev: T) => T)) => {
-      setValue((prev) => {
-        const resolved = typeof next === "function" ? (next as (p: T) => T)(prev) : next
-        persist(resolved)
-        notifyStorageKeyListeners(key)
-        return resolved
-      })
+      const previous = valueRef.current
+      const resolved =
+        typeof next === "function" ? (next as (p: T) => T)(previous) : next
+
+      valueRef.current = resolved
+      setValue(resolved)
+      persist(resolved)
+      notifyStorageKeyListeners(key)
     },
     [key, persist],
   )
@@ -76,13 +90,16 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
       if (typeof window === "undefined") return
       localStorage.setItem(key, raw)
       notifyStorageKeyListeners(key)
-      setValue(() => {
-        try {
-          return JSON.parse(raw) as T
-        } catch {
-          return JSON.parse(initialJson) as T
-        }
-      })
+
+      let nextValue: T
+      try {
+        nextValue = JSON.parse(raw) as T
+      } catch {
+        nextValue = JSON.parse(initialJson) as T
+      }
+
+      valueRef.current = nextValue
+      setValue(nextValue)
     },
     [key, initialJson],
   )
@@ -91,6 +108,7 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     if (typeof window === "undefined") return
     localStorage.removeItem(key)
     notifyStorageKeyListeners(key)
+    valueRef.current = fallback
     setValue(fallback)
   }, [key, fallback])
 

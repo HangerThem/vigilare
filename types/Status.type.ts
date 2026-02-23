@@ -8,8 +8,8 @@ export const StatusSchema = ItemSchema.extend({
   url: z.url(),
   state: StateSchema.default("unknown"),
   variant: StatusVariantSchema.optional(),
-  responseTime: z.number().optional(),
-  lastChecked: z.string().optional(),
+  responseTime: z.number().default(0),
+  lastChecked: z.string().default(() => new Date().toISOString()),
 })
 
 export type Status = z.infer<typeof StatusSchema>
