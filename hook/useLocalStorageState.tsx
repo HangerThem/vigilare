@@ -7,23 +7,31 @@ import {
   subscribeStorageKey,
 } from "@/utils/storageListeners"
 
-function readValue<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback
+function readValue<T>(raw: string | null, fallback: T): T {
+  if (raw === null) return fallback
 
   try {
-    const stored = localStorage.getItem(key)
-    return stored === null ? fallback : (JSON.parse(stored) as T)
+    return JSON.parse(raw) as T
   } catch {
     return fallback
   }
 }
 
+function readRawValue(key: string): string | null {
+  if (typeof window === "undefined") return null
+
+  return localStorage.getItem(key)
+}
+
 export function useLocalStorageState<T>(key: string, initialValue: T) {
-  const fallback = useMemo(() => initialValue, [initialValue])
-  const initialJson = useMemo(() => JSON.stringify(initialValue), [initialValue])
+  // Keep initial fallback stable for this key to avoid re-subscribing on each render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fallback = useMemo(() => initialValue, [key])
+  const initialJson = useMemo(() => JSON.stringify(fallback), [fallback])
 
   const [value, setValue] = useState<T>(fallback)
   const valueRef = useRef(value)
+  const rawValueRef = useRef<string | null>(null)
 
   useEffect(() => {
     valueRef.current = value
@@ -31,12 +39,17 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
 
   useEffect(() => {
     const refresh = () => {
-      const next = readValue(key, fallback)
+      const raw = readRawValue(key)
+      if (raw === rawValueRef.current) return
+
+      rawValueRef.current = raw
+      const next = readValue(raw, fallback)
       valueRef.current = next
       setValue(next)
     }
 
-    const initialSyncTimeout = window.setTimeout(refresh, 0)
+    rawValueRef.current = null
+    refresh()
 
     const unsubscribeKey = subscribeStorageKey(key, refresh)
     const unsubscribeGlobal = subscribeStorageGlobal(refresh)
@@ -47,7 +60,6 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     window.addEventListener("storage", onStorage)
 
     return () => {
-      window.clearTimeout(initialSyncTimeout)
       unsubscribeKey()
       unsubscribeGlobal()
       window.removeEventListener("storage", onStorage)
@@ -57,8 +69,11 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
   const persist = useCallback(
     (next: T) => {
       if (typeof window === "undefined") return
+
+      const raw = JSON.stringify(next)
+      rawValueRef.current = raw
       try {
-        localStorage.setItem(key, JSON.stringify(next))
+        localStorage.setItem(key, raw)
       } catch (error) {
         console.error("Failed to save to localStorage:", error)
       }
@@ -71,6 +86,8 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
       const previous = valueRef.current
       const resolved =
         typeof next === "function" ? (next as (p: T) => T)(previous) : next
+
+      if (Object.is(previous, resolved)) return
 
       valueRef.current = resolved
       setValue(resolved)
@@ -89,6 +106,7 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
     (raw: string) => {
       if (typeof window === "undefined") return
       localStorage.setItem(key, raw)
+      rawValueRef.current = raw
       notifyStorageKeyListeners(key)
 
       let nextValue: T
@@ -107,6 +125,7 @@ export function useLocalStorageState<T>(key: string, initialValue: T) {
   const clear = useCallback(() => {
     if (typeof window === "undefined") return
     localStorage.removeItem(key)
+    rawValueRef.current = null
     notifyStorageKeyListeners(key)
     valueRef.current = fallback
     setValue(fallback)

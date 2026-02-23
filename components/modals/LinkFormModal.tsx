@@ -20,6 +20,9 @@ const defaultValues: LinkFormData = {
 
 export default function LinkFormModal() {
   const { add, update, editingId, setEditingId, editingItem } = useLinks()
+  const editingCategory = editingItem?.category
+  const editingTitle = editingItem?.title
+  const editingUrl = editingItem?.url
   const [categoryOptions] = useState(
     Object.values(CATEGORY_META).map((cat) => ({
       value: cat.name.toLowerCase(),
@@ -58,16 +61,29 @@ export default function LinkFormModal() {
       return
     }
 
-    if (editingItem) {
+    if (
+      editingId &&
+      editingCategory !== undefined &&
+      editingTitle !== undefined &&
+      editingUrl !== undefined
+    ) {
       reset({
-        category: editingItem.category,
-        url: editingItem.url,
-        title: editingItem.title,
+        category: editingCategory,
+        url: editingUrl,
+        title: editingTitle,
       })
     } else {
       reset(defaultValues)
     }
-  }, [isOpen, editingItem, reset, setEditingId])
+  }, [
+    isOpen,
+    editingId,
+    editingCategory,
+    editingTitle,
+    editingUrl,
+    reset,
+    setEditingId,
+  ])
 
   return (
     <Modal name="links">

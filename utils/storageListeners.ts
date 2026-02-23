@@ -45,16 +45,12 @@ export function subscribeStorageGlobal(listener: StorageListener): () => void {
 }
 
 /**
- * Notifies all listeners associated with a specific storage key, as well as all global listeners.
+ * Notifies all listeners associated with a specific storage key.
  *
  * @param key - The storage key whose listeners should be notified.
- *
- * @remarks
- * This function triggers all registered listeners for the provided key, followed by all global listeners.
  */
 export function notifyStorageKeyListeners(key: string): void {
   keyListeners.get(key)?.forEach((listener) => listener())
-  globalListeners.forEach((listener) => listener())
 }
 
 /**

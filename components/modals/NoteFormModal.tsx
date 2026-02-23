@@ -24,6 +24,9 @@ const defaultValues: NoteFormData = {
 
 export default function NoteFormModal() {
   const { add, update, editingId, setEditingId, editingItem } = useNotes()
+  const editingCategory = editingItem?.category
+  const editingTitle = editingItem?.title
+  const editingContent = editingItem?.content
   const [categoryOptions] = useState(
     Object.values(CATEGORY_META).map((cat) => ({
       value: cat.name.toLowerCase(),
@@ -87,16 +90,29 @@ export default function NoteFormModal() {
       return
     }
 
-    if (editingItem) {
+    if (
+      editingId &&
+      editingCategory !== undefined &&
+      editingTitle !== undefined &&
+      editingContent !== undefined
+    ) {
       reset({
-        category: editingItem.category,
-        title: editingItem.title,
-        content: editingItem.content,
+        category: editingCategory,
+        title: editingTitle,
+        content: editingContent,
       })
     } else {
       reset(defaultValues)
     }
-  }, [isOpen, editingItem, reset, setEditingId])
+  }, [
+    isOpen,
+    editingId,
+    editingCategory,
+    editingTitle,
+    editingContent,
+    reset,
+    setEditingId,
+  ])
 
   return (
     <Modal name="notes">

@@ -12,6 +12,8 @@ interface ButtonProps extends Omit<
   variant?: "primary" | "secondary" | "ghost" | "danger"
   size?: "sm" | "md" | "lg"
   keepWidth?: boolean
+  preventClickPropagation?: boolean
+  preventClickDefault?: boolean
 }
 
 export function Button({
@@ -20,6 +22,9 @@ export function Button({
   size = "md",
   keepWidth = false,
   className,
+  preventClickPropagation = true,
+  preventClickDefault = true,
+  onClick,
   ...props
 }: ButtonProps) {
   const variants = {
@@ -59,6 +64,19 @@ export function Button({
         sizes[size],
         className,
       )}
+      onClick={(e) => {
+        if (props.type !== "submit") {
+          if (preventClickPropagation) {
+            e.stopPropagation()
+          }
+          if (preventClickDefault) {
+            e.preventDefault()
+          }
+        }
+        if (onClick) {
+          onClick(e)
+        }
+      }}
       style={keepWidth && width ? { width } : undefined}
       {...props}
     >

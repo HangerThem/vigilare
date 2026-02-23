@@ -38,6 +38,6 @@
 ## Status panel
 
 - [x] Last check time + response time shown inline
-- [ ] Manual "Check now" action per status
+- [x] Manual "Check now" action per status
 - [ ] Uptime history sparkline (last 24h/7d)
-- [ ] Pause monitoring per status
+- [x] Pause monitoring per status

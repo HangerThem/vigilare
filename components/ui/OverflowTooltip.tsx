@@ -35,7 +35,11 @@ export function OverflowTooltip({
   }, [children, className])
 
   return (
-    <Tooltip content={content} className="block w-full" disabled={!isOverflowing}>
+    <Tooltip
+      content={content}
+      className="block w-full"
+      disabled={!isOverflowing}
+    >
       <div ref={ref} className={cn("truncate min-w-0", className ?? "")}>
         {children}
       </div>

@@ -23,7 +23,6 @@ import Tooltip from "../ui/Tooltip"
 export function StatusPanel() {
   const listRef = useRef<HTMLDivElement>(null)
   const sortableRef = useRef<SortableJS | null>(null)
-  const statusesRef = useRef<Status[]>([])
   const {
     items: statuses,
     reorder,
@@ -37,7 +36,23 @@ export function StatusPanel() {
 
   const handleStatusUpdateFromSW = useCallback(
     (updatedStatuses: Status[]) => {
-      setStatuses(updatedStatuses)
+      const updatesById = new Map(
+        updatedStatuses.map((status) => [
+          status.id,
+          {
+            state: status.state,
+            responseTime: status.responseTime,
+            lastChecked: status.lastChecked,
+          },
+        ]),
+      )
+
+      setStatuses((prev) =>
+        prev.map((status) => {
+          const statusUpdates = updatesById.get(status.id)
+          return statusUpdates ? { ...status, ...statusUpdates } : status
+        }),
+      )
     },
     [setStatuses],
   )
@@ -54,10 +69,6 @@ export function StatusPanel() {
     enableNotifications,
     disableNotifications,
   } = useNotifications(handleStatusUpdateFromSW)
-
-  useEffect(() => {
-    statusesRef.current = statuses
-  }, [statuses])
 
   useEffect(() => {
     if (statuses.length > 0 && !isMonitoring) {

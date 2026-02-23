@@ -11,34 +11,37 @@ import LinkWithSettings from "@/components/common/LinkWithSettings"
 import { useSettings } from "@/context/SettingsContext"
 import { Link } from "@/types/Link.type"
 import { CATEGORY_META } from "@/const/Category"
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
 import Image from "next/image"
 
 interface LinkItemProps {
   link: Link
 }
 
+const failedFavicons = new Set<string>()
+
 export default function LinkItem({ link }: LinkItemProps) {
   const { setEditingId, remove } = useLinks()
   const { openModal } = useModal()
   const { settings } = useSettings()
-  const [faviconUrl, setFaviconUrl] = useState("")
+  const [failedCurrentFavicon, setFailedCurrentFavicon] = useState<
+    string | null
+  >(null)
+
+  const faviconUrl = useMemo(() => {
+    try {
+      return `/favicon?domain=${new URL(link.url).hostname}`
+    } catch (e) {
+      console.error("Invalid URL for favicon:", link.url, e)
+      return ""
+    }
+  }, [link.url])
 
   const compact = settings.compactMode
-
-  useEffect(() => {
-    const getFavicon = () => {
-      try {
-        const url = new URL(link.url)
-        setFaviconUrl(`/favicon?domain=${url.hostname}`)
-      } catch (e) {
-        console.error("Invalid URL for favicon:", link.url, e)
-        setFaviconUrl("")
-      }
-    }
-
-    getFavicon()
-  }, [link.url])
+  const showFavicon =
+    faviconUrl !== "" &&
+    failedCurrentFavicon !== faviconUrl &&
+    !failedFavicons.has(faviconUrl)
 
   return (
     <motion.li
@@ -88,14 +91,17 @@ export default function LinkItem({ link }: LinkItemProps) {
           href={link.url}
           className={`w-fit flex items-center gap-1 block font-medium ${compact ? "text-sm" : ""}`}
         >
-          {faviconUrl && (
+          {showFavicon && (
             <Image
               src={faviconUrl}
               alt="favicon"
               width={16}
               height={16}
               className="inline mr-1"
-              onError={() => setFaviconUrl("")}
+              onError={() => {
+                failedFavicons.add(faviconUrl)
+                setFailedCurrentFavicon(faviconUrl)
+              }}
               unoptimized
             />
           )}

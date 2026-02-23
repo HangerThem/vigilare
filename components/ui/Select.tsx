@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   useFloating,
   autoUpdate,
@@ -66,6 +66,7 @@ export function Select({
     open: isOpen,
     onOpenChange: setIsOpen,
     placement: "bottom-start",
+    transform: false,
     whileElementsMounted: autoUpdate,
     middleware: [
       offset(4),
@@ -207,81 +208,91 @@ export function Select({
     }
   }, [highlightedIndex])
 
-  const dropdown = isOpen ? (
-    <div
-      ref={(node) => {
-        dropdownRef.current = node
-        refs.setFloating(node)
-      }}
-      className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden"
-      style={floatingStyles}
-    >
-      {searchable && (
-        <div className="flex gap-2 items-center p-2 border-b border-[rgb(var(--border))]">
-          <Search size={16} className="text-[rgb(var(--muted))]" />
-          <Input
-            ref={searchInputRef}
-            type="text"
-            variant="ghost"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            placeholder={searchPlaceholder}
-          />
-        </div>
-      )}
+  const dropdown = (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          ref={(node) => {
+            dropdownRef.current = node
+            refs.setFloating(node)
+          }}
+          className="z-50 bg-[rgb(var(--background))] rounded-lg border border-[rgb(var(--border))] shadow-lg overflow-hidden pointer-events-auto"
+          style={floatingStyles}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.12 }}
+        >
+          {searchable && (
+            <div className="flex gap-2 items-center p-2 border-b border-[rgb(var(--border))]">
+              <Search size={16} className="text-[rgb(var(--muted))]" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                variant="ghost"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder={searchPlaceholder}
+              />
+            </div>
+          )}
 
-      <div
-        ref={listRef}
-        className="overflow-y-auto"
-        style={{ maxHeight }}
-        role="listbox"
-      >
-        {filteredOptions.length === 0 ? (
-          <div className="py-8 text-center text-[rgb(var(--muted))] text-sm">
-            {noOptionsMessage}
-          </div>
-        ) : (
-          filteredOptions.map((option, index) => {
-            const isSelected = option.value === value
-            const isHighlighted = index === highlightedIndex
+          <div
+            ref={listRef}
+            className="overflow-y-auto"
+            style={{ maxHeight }}
+            role="listbox"
+          >
+            {filteredOptions.length === 0 ? (
+              <div className="py-8 text-center text-[rgb(var(--muted))] text-sm">
+                {noOptionsMessage}
+              </div>
+            ) : (
+              filteredOptions.map((option, index) => {
+                const isSelected = option.value === value
+                const isHighlighted = index === highlightedIndex
 
-            return (
-              <div
-                key={option.value}
-                onClick={() => handleSelect(option)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`
+                return (
+                  <div
+                    key={option.value}
+                    onClick={() => handleSelect(option)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    className={`
                       flex items-center justify-between px-3 py-2 cursor-pointer transition-colors
                       ${isHighlighted ? "bg-[rgb(var(--card-hover))]" : ""}
                       ${isSelected ? "bg-[rgb(var(--card-hover))]" : ""}
                       ${option.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-[rgb(var(--card-hover))]"}
                     `}
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {option.icon && (
-                    <span className="w-4 h-4 shrink-0">{option.icon}</span>
-                  )}
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm text-[rgb(var(--foreground))] truncate">
-                      {option.label}
-                    </span>
-                    {option.description && (
-                      <span className="text-xs text-[rgb(var(--muted))] truncate">
-                        {option.description}
-                      </span>
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {option.icon && (
+                        <span className="w-4 h-4 shrink-0">{option.icon}</span>
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm text-[rgb(var(--foreground))] truncate">
+                          {option.label}
+                        </span>
+                        {option.description && (
+                          <span className="text-xs text-[rgb(var(--muted))] truncate">
+                            {option.description}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <Check size={16} className="text-[rgb(var(--primary))]" />
                     )}
                   </div>
-                </div>
-                {isSelected && (
-                  <Check size={16} className="text-[rgb(var(--primary))]" />
-                )}
-              </div>
-            )
-          })
-        )}
-      </div>
-    </div>
-  ) : null
+                )
+              })
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+
+  const canUseDOM = typeof document !== "undefined"
 
   return (
     <div className={cn("relative w-full", className)} onKeyDown={handleKeyDown}>
@@ -339,7 +350,7 @@ export function Select({
         </div>
       </motion.div>
 
-      {typeof document !== "undefined" && createPortal(dropdown, document.body)}
+      {canUseDOM && createPortal(dropdown, document.body)}
     </div>
   )
 }

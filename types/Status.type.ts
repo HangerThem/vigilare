@@ -10,6 +10,7 @@ export const StatusSchema = ItemSchema.extend({
   variant: StatusVariantSchema.optional(),
   responseTime: z.number().default(0),
   lastChecked: z.string().default(() => new Date().toISOString()),
+  enabled: z.boolean().default(true),
 })
 
 export type Status = z.infer<typeof StatusSchema>

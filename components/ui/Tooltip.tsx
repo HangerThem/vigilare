@@ -80,28 +80,27 @@ export default function Tooltip({
         {children}
       </div>
 
-      {canUseDOM
-        ? createPortal(
-            <AnimatePresence>
-              {!disabled && isOpen && (
-                <motion.div
-                  ref={(node) => {
-                    refs.setFloating(node)
-                  }}
-                  style={floatingStyles}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.12 }}
-                  className="max-w-160 z-50 pointer-events-none px-2 py-1 text-xs bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded shadow-lg"
-                >
-                  {content}
-                </motion.div>
-              )}
-            </AnimatePresence>,
-            document.body,
-          )
-        : null}
+      {canUseDOM &&
+        createPortal(
+          <AnimatePresence>
+            {!disabled && isOpen && (
+              <motion.div
+                ref={(node) => {
+                  refs.setFloating(node)
+                }}
+                style={floatingStyles}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.12 }}
+                className="max-w-160 z-50 pointer-events-none px-2 py-1 text-xs bg-[rgb(var(--card))] border border-[rgb(var(--border))] rounded shadow-lg"
+              >
+                {content}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
     </>
   )
 }

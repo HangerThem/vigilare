@@ -21,6 +21,9 @@ const defaultValues: SnippetFormData = {
 
 export default function SnippetFormModal() {
   const { add, update, editingId, setEditingId, editingItem } = useSnippets()
+  const editingLanguage = editingItem?.language
+  const editingTitle = editingItem?.title
+  const editingContent = editingItem?.content
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("snippets")
 
@@ -51,16 +54,29 @@ export default function SnippetFormModal() {
       return
     }
 
-    if (editingItem) {
+    if (
+      editingId &&
+      editingLanguage !== undefined &&
+      editingTitle !== undefined &&
+      editingContent !== undefined
+    ) {
       reset({
-        language: editingItem.language,
-        title: editingItem.title,
-        content: editingItem.content,
+        language: editingLanguage,
+        title: editingTitle,
+        content: editingContent,
       })
     } else {
       reset(defaultValues)
     }
-  }, [isOpen, editingItem, reset, setEditingId])
+  }, [
+    isOpen,
+    editingId,
+    editingLanguage,
+    editingTitle,
+    editingContent,
+    reset,
+    setEditingId,
+  ])
 
   return (
     <Modal name="snippets">

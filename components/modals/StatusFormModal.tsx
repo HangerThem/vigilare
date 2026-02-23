@@ -4,15 +4,17 @@ import { Input } from "@/components/ui/Input"
 import { useModal } from "@/context/ModalContext"
 import { useStatuses } from "@/context/DataContext"
 import { Controller, useForm } from "react-hook-form"
-import { nanoid } from "nanoid/non-secure"
 import { useEffect, useState } from "react"
 import { Select } from "@/components/ui/Select"
 import { Status, StatusSchema } from "@/types/Status.type"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { State } from "@/const/State"
 import { STATUS_VARIANT_META } from "@/const/StatusVariant"
+import { checkStatus } from "@/utils/status"
 
-type StatusFormData = Omit<Status, "id" | "state" | "type">
+type StatusFormData = Omit<
+  Status,
+  "id" | "state" | "type" | "responseTime" | "lastChecked" | "enabled"
+>
 
 const defaultValues: StatusFormData = {
   title: "",
@@ -28,10 +30,12 @@ export default function StatusFormModal() {
     editingId,
     setEditingId,
     editingItem,
-    setItems: setStatuses,
   } = useStatuses()
   const { closeModal, isModalOpen } = useModal()
   const isOpen = isModalOpen("status")
+  const editingTitle = editingItem?.title
+  const editingUrl = editingItem?.url
+  const editingVariant = editingItem?.variant
   const [variantOptions] = useState(
     Object.values(STATUS_VARIANT_META).map((cat) => ({
       value: cat.name.toLowerCase(),
@@ -46,18 +50,14 @@ export default function StatusFormModal() {
 
   const handleAddStatus = async (data: StatusFormData) => {
     const { url, title, variant } = data
-    const newStatusId = nanoid()
-    add(StatusSchema.parse({ url, title, variant }))
+    const newStatus = add(StatusSchema.parse({ url, title, variant }))
     closeModal()
-    const state: State = await fetch(url)
-      .then((res) => (res.ok ? "up" : "down"))
-      .catch(() => "down")
+    const state = await checkStatus(newStatus)
 
-    setStatuses((prevStatuses) =>
-      prevStatuses.map((statusItem) =>
-        statusItem.id === newStatusId ? { ...statusItem, state } : statusItem,
-      ),
-    )
+    update(newStatus.id, {
+      state: state.state,
+      responseTime: state.responseTime,
+    })
   }
 
   const handleEditStatus = async (data: StatusFormData) => {
@@ -69,15 +69,12 @@ export default function StatusFormModal() {
     setEditingId(null)
     closeModal()
     if (oldStatus && oldStatus.url !== url) {
-      const state: State = await fetch(url)
-        .then((res) => (res.ok ? "up" : "down"))
-        .catch(() => "down")
+      const state = await checkStatus({ ...oldStatus, url })
 
-      setStatuses((prevStatuses) =>
-        prevStatuses.map((statusItem) =>
-          statusItem.id === editingId ? { ...statusItem, state } : statusItem,
-        ),
-      )
+      update(oldStatus.id, {
+        state: state.state,
+        responseTime: state.responseTime,
+      })
     }
   }
 
@@ -88,16 +85,28 @@ export default function StatusFormModal() {
       return
     }
 
-    if (editingItem) {
+    if (
+      editingId &&
+      editingTitle !== undefined &&
+      editingUrl !== undefined
+    ) {
       reset({
-        url: editingItem.url,
-        title: editingItem.title,
-        variant: editingItem.variant,
+        url: editingUrl,
+        title: editingTitle,
+        variant: editingVariant,
       })
     } else {
       reset(defaultValues)
     }
-  }, [isOpen, editingItem, reset, setEditingId])
+  }, [
+    isOpen,
+    editingId,
+    editingTitle,
+    editingUrl,
+    editingVariant,
+    reset,
+    setEditingId,
+  ])
 
   return (
     <Modal name="status">

@@ -608,12 +608,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Bold"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   handleBold(value, start, end, applyChange),
                 )
-              }}
+              }
             >
               <Bold size={16} />
             </Button>
@@ -624,12 +623,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Italic"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   handleItalic(value, start, end, applyChange),
                 )
-              }}
+              }
             >
               <Italic size={16} />
             </Button>
@@ -640,12 +638,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Underline"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   handleUnderline(value, start, end, applyChange),
                 )
-              }}
+              }
             >
               <Underline size={16} />
             </Button>
@@ -657,12 +654,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Link"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   handleLink(value, start, end, emitChange, setSelection),
                 )
-              }}
+              }
             >
               <Link2 size={16} />
             </Button>
@@ -673,10 +669,9 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Inline code"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((_, start, end) => toggleWrap("`", start, end))
-              }}
+              }
             >
               <Code2 size={16} />
             </Button>
@@ -688,12 +683,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Bullet list"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   toggleLinePrefix(value, start, end, "- ", /^[-*]\s+/),
                 )
-              }}
+              }
             >
               <List size={16} />
             </Button>
@@ -704,12 +698,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Numbered list"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   toggleLinePrefix(value, start, end, "1. ", /^\d+\.\s+/),
                 )
-              }}
+              }
             >
               <ListOrdered size={16} />
             </Button>
@@ -720,12 +713,11 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
               className="px-2 py-1"
               disabled={preview}
               aria-label="Quote"
-              onClick={(e) => {
-                e.preventDefault()
+              onClick={() =>
                 withSelection((value, start, end) =>
                   toggleLinePrefix(value, start, end, "> ", /^>\s+/),
                 )
-              }}
+              }
             >
               <Quote size={16} />
             </Button>
@@ -735,10 +727,7 @@ export const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
             <Button
               variant="ghost"
               className="px-2 py-1"
-              onClick={(e) => {
-                e.preventDefault()
-                setPreview((prev) => !prev)
-              }}
+              onClick={() => setPreview((prev) => !prev)}
               aria-label="Toggle preview"
             >
               {preview ? <EyeOff size={16} /> : <Eye size={16} />}

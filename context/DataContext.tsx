@@ -14,7 +14,7 @@ import { icons } from "lucide-react"
 interface DataManager<T extends { id: string }> {
   items: T[]
   setItems: (items: T[] | ((prev: T[]) => T[])) => void
-  add: (item: T) => void
+  add: (item: T) => T
   update: (id: string, updates: Partial<T>) => void
   remove: (id: string) => void
   getById: (id: string) => T | undefined
@@ -51,6 +51,7 @@ function useDataManager<T extends { id: string }>(
   const add = useCallback(
     (item: T) => {
       setItems((prev) => [...prev, item])
+      return item
     },
     [setItems],
   )

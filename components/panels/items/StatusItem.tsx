@@ -1,5 +1,14 @@
 import { motion } from "framer-motion"
-import { GripVertical, Info, Pencil, Trash } from "lucide-react"
+import {
+  GripVertical,
+  Info,
+  Pencil,
+  Trash,
+  Pause,
+  Play,
+  RotateCcw,
+  MoreHorizontal,
+} from "lucide-react"
 import { useModal } from "@/context/ModalContext"
 import LinkWithSettings from "@/components/common/LinkWithSettings"
 import { useSettings } from "@/context/SettingsContext"
@@ -8,6 +17,9 @@ import { Status } from "@/types/Status.type"
 import { STATE_META } from "@/const/State"
 import Tooltip from "@/components/ui/Tooltip"
 import { format } from "date-fns"
+import { checkStatus } from "@/utils/status"
+import Dropdown from "@/components/ui/Dropdown"
+import { Button } from "@/components/ui/Button"
 
 interface StatusItemProps {
   status: Status
@@ -15,7 +27,7 @@ interface StatusItemProps {
 
 export default function StatusItem({ status }: StatusItemProps) {
   const { openModal } = useModal()
-  const { setEditingId, remove } = useStatuses()
+  const { setEditingId, remove, update } = useStatuses()
   const { settings } = useSettings()
 
   const compact = settings.compactMode
@@ -31,22 +43,70 @@ export default function StatusItem({ status }: StatusItemProps) {
       <LinkWithSettings href={status.url} className="flex items-center">
         <div
           className={`absolute ${compact ? "w-1.5" : "w-2"} h-full left-0`}
-          style={{ backgroundColor: STATE_META[status.state].color }}
+          style={{
+            backgroundColor: status.enabled
+              ? STATE_META[status.state].color
+              : "#ffc107",
+          }}
         />
 
         <div
           className={`flex gap-2 absolute ${compact ? "top-1.5 right-1.5" : "top-2 right-2"} items-center`}
         >
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              setEditingId(status.id)
-              openModal("status")
-            }}
-            className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer"
-          >
-            <Pencil size={compact ? 14 : 16} />
-          </button>
+          <Dropdown
+            trigger={
+              <button className="text-[rgb(var(--muted))] hover:text-[rgb(var(--foreground))] transition-colors cursor-pointer">
+                <MoreHorizontal size={compact ? 14 : 16} />
+              </button>
+            }
+            content={
+              <div className="flex flex-col gap-1">
+                <Button
+                  onClick={async () => {
+                    update(status.id, { enabled: true })
+                    const state = await checkStatus(status)
+                    console.log(state)
+                    update(status.id, {
+                      state: state.state,
+                      lastChecked: new Date().toISOString(),
+                      responseTime: state.responseTime,
+                    })
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <RotateCcw size={compact ? 14 : 16} /> Recheck
+                </Button>
+                <Button
+                  onClick={() =>
+                    update(status.id, { enabled: !status.enabled })
+                  }
+                  size="sm"
+                  variant="ghost"
+                >
+                  {status.enabled ? (
+                    <>
+                      <Pause size={compact ? 14 : 16} /> Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play size={compact ? 14 : 16} /> Start
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditingId(status.id)
+                    openModal("status")
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Pencil size={compact ? 14 : 16} /> Edit
+                </Button>
+              </div>
+            }
+          />
 
           <button
             onClick={(e) => {

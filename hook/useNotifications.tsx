@@ -11,6 +11,7 @@ import { useLocalStorageState } from "@/hook/useLocalStorageState"
 import { useOnline } from "@/hook/useOnline"
 import { Status } from "@/types/Status.type"
 import { State } from "@/const/State"
+import { checkStatus } from "@/utils/status"
 
 export type NotificationPermission = "default" | "granted" | "denied"
 
@@ -41,28 +42,6 @@ const getPermission = (): NotificationPermission =>
     : "default"
 const getServerPermission = (): NotificationPermission => "default"
 
-async function checkStatus(
-  status: Status,
-): Promise<{ state: "up" | "down"; responseTime: number }> {
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-    const domain = new URL(status.url).hostname
-
-    const res = await fetch(`/status?domain=${domain}`)
-
-    if (res.ok) {
-      clearTimeout(timeoutId)
-      return { state: "up", responseTime: (await res.json()).responseTime }
-    }
-
-    return { state: "down", responseTime: 0 }
-  } catch {
-    return { state: "down", responseTime: 0 }
-  }
-}
-
 export function useNotifications(
   onStatusUpdate?: (statuses: Status[]) => void,
 ): UseNotificationsReturn {
@@ -90,6 +69,7 @@ export function useNotifications(
   const onStatusUpdateRef = useRef(onStatusUpdate)
   const statusesRef = useRef<Status[]>([])
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isCheckingRef = useRef(false)
 
   useEffect(() => {
     onStatusUpdateRef.current = onStatusUpdate
@@ -161,39 +141,62 @@ export function useNotifications(
   )
 
   const performCheck = useCallback(async () => {
+    if (isCheckingRef.current) return
+
     if (!isOnline) {
       console.log("Offline: Skipping status check")
       return
     }
 
-    const statuses = statusesRef.current
-    if (!statuses || statuses.length === 0) {
+    const statusesAtStart = statusesRef.current
+    if (!statusesAtStart || statusesAtStart.length === 0) {
       console.log("No statuses to check")
       return
     }
 
-    const updatedStatuses: Status[] = []
+    const checkables = statusesAtStart
+      .filter((status) => status.enabled)
+      .map((status) => checkStatus(status))
 
-    for (const status of statuses) {
-      const newState = await checkStatus(status)
-      const previousState = status.state
+    if (checkables.length === 0) return
 
-      if (previousState !== "unknown" && previousState !== newState.state) {
-        if (notificationsEnabledRef.current) {
-          await showNotification(status, previousState, newState.state)
+    isCheckingRef.current = true
+    try {
+      const checkResults = await Promise.all(checkables)
+      const statusesNow = statusesRef.current
+      const updatesById = new Map<
+        string,
+        { state: "up" | "down"; responseTime: number; lastChecked: string }
+      >()
+
+      for (const results of checkResults) {
+        const { id, state, responseTime } = results
+        const currentStatus = statusesNow.find((s) => s.id === id)
+        if (!currentStatus) continue
+
+        if (currentStatus.state !== state && notificationsEnabledRef.current) {
+          void showNotification(currentStatus, currentStatus.state, state)
         }
+
+        updatesById.set(id, {
+          state,
+          responseTime,
+          lastChecked: new Date().toISOString(),
+        })
       }
 
-      updatedStatuses.push({
-        ...status,
-        state: newState.state,
-        responseTime: newState.responseTime,
-        lastChecked: new Date().toISOString(),
-      })
-    }
+      if (updatesById.size === 0) return
 
-    statusesRef.current = updatedStatuses
-    onStatusUpdateRef.current?.(updatedStatuses)
+      const nextStatuses = statusesNow.map((status) => {
+        const statusUpdates = updatesById.get(status.id)
+        return statusUpdates ? { ...status, ...statusUpdates } : status
+      })
+
+      statusesRef.current = nextStatuses
+      onStatusUpdateRef.current?.(nextStatuses)
+    } finally {
+      isCheckingRef.current = false
+    }
   }, [showNotification, isOnline])
 
   useEffect(() => {
