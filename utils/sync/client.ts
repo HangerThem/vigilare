@@ -32,6 +32,8 @@ async function parseJson<T>(response: Response): Promise<T> {
 export async function fetchAuthMe(): Promise<{ account: SyncAccount }> {
   const response = await fetch("/api/auth/me", {
     method: "GET",
+    credentials: "include",
+    cache: "no-store",
   })
 
   return parseJson<{ account: SyncAccount }>(response)

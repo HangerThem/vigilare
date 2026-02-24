@@ -17,11 +17,8 @@ import Toggle from "@/components/ui/Toggle"
 import {
   ChevronDown,
   ChevronUp,
-  Cloud,
-  CloudOff,
   Command,
   GripVertical,
-  RefreshCcw,
   RotateCcw,
 } from "lucide-react"
 import {
@@ -38,6 +35,7 @@ import { cn } from "@/utils/cn"
 import { getPreviewModel } from "@/utils/layout"
 import { useSync } from "@/context/SyncContext"
 import { useModal } from "@/context/ModalContext"
+import { SYNC_STATUS_META } from "@/utils/sync/statusMeta"
 
 const MODIFIER_KEYS = ["Shift", "Control", "Meta", "Alt"]
 
@@ -102,37 +100,6 @@ const LAYOUT_PRESET_OPTIONS: {
     description: "Choose columns, focus panel, and order.",
   },
 ]
-
-const SYNC_STATUS_META: Record<
-  "local" | "connecting" | "synced" | "offline" | "error",
-  { label: string; className: string; icon: typeof Cloud }
-> = {
-  local: {
-    label: "Local",
-    className: "border-[rgb(var(--border))] text-[rgb(var(--muted))]",
-    icon: CloudOff,
-  },
-  connecting: {
-    label: "Connecting",
-    className: "border-amber-400/60 text-amber-300",
-    icon: RefreshCcw,
-  },
-  synced: {
-    label: "Synced",
-    className: "border-emerald-500/60 text-emerald-300",
-    icon: Cloud,
-  },
-  offline: {
-    label: "Offline",
-    className: "border-orange-500/60 text-orange-300",
-    icon: CloudOff,
-  },
-  error: {
-    label: "Error",
-    className: "border-red-500/60 text-red-300",
-    icon: CloudOff,
-  },
-}
 
 function LayoutPreview({ settings }: { settings: AppSettings }) {
   const preview = getPreviewModel(settings)

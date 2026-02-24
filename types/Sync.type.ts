@@ -46,7 +46,6 @@ export interface WorkspaceMember {
   role: WorkspaceRole
   canInvite: boolean
   joinedAt: string
-  lastSeenAt: string | null
 }
 
 export interface InviteSummary {

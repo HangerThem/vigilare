@@ -12,18 +12,35 @@ export interface AuthenticatedUser {
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
   const session = await auth()
   const userId = session?.user?.id
-  if (!userId) {
+  const sessionEmail = session?.user?.email?.trim().toLowerCase() ?? null
+
+  if (!userId && !sessionEmail) {
     return null
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-  })
+  const userById = userId
+    ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      })
+    : null
+
+  const user =
+    userById ??
+    (sessionEmail
+      ? await prisma.user.findUnique({
+          where: { email: sessionEmail },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        })
+      : null)
 
   if (!user) {
     return null

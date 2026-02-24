@@ -46,10 +46,13 @@ export async function POST(request: NextRequest) {
       resetToken.expiresAt.getTime() <= Date.now() ||
       resetToken.user.email !== email
     ) {
-      return NextResponse.json({ error: "Invalid or expired reset token" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid or expired reset token" },
+        { status: 400 },
+      )
     }
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       const passwordHash = createPasswordHash(newPassword)
       await tx.passwordCredential.upsert({
         where: { userId: resetToken.userId },

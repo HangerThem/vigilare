@@ -8,49 +8,10 @@ import { useModal } from "@/context/ModalContext"
 import { useSync } from "@/context/SyncContext"
 import { useToast } from "@/context/ToastContext"
 import { cn } from "@/utils/cn"
+import { SYNC_STATUS_META } from "@/utils/sync/statusMeta"
 import { InviteSummary, WorkspaceRole } from "@/types/Sync.type"
-import {
-  Cloud,
-  CloudOff,
-  Copy,
-  Link2,
-  RefreshCcw,
-  RotateCcw,
-  Shield,
-  Users,
-} from "lucide-react"
+import { Copy, Link2, RefreshCcw, RotateCcw, Shield, Users } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-
-const SYNC_STATUS_META: Record<
-  "local" | "connecting" | "synced" | "offline" | "error",
-  { label: string; className: string; icon: typeof Cloud }
-> = {
-  local: {
-    label: "Local",
-    className: "border-[rgb(var(--border))] text-[rgb(var(--muted))]",
-    icon: CloudOff,
-  },
-  connecting: {
-    label: "Connecting",
-    className: "border-amber-400/60 text-amber-300",
-    icon: RefreshCcw,
-  },
-  synced: {
-    label: "Synced",
-    className: "border-emerald-500/60 text-emerald-300",
-    icon: Cloud,
-  },
-  offline: {
-    label: "Offline",
-    className: "border-orange-500/60 text-orange-300",
-    icon: CloudOff,
-  },
-  error: {
-    label: "Error",
-    className: "border-red-500/60 text-red-300",
-    icon: CloudOff,
-  },
-}
 
 function getInviteState(invite: InviteSummary): {
   label: string
@@ -74,19 +35,9 @@ function getInviteState(invite: InviteSummary): {
 export default function SyncModal() {
   const { isModalOpen, openModal } = useModal()
   const sync = useSync()
-  const {
-    activeInstanceId,
-    isRemoteActive,
-    listInvites,
-    listMembers,
-  } = sync
+  const { activeInstanceId, isRemoteActive, listInvites, listMembers } = sync
   const { addToast } = useToast()
 
-  const [accountNameInput, setAccountNameInput] = useState("")
-  const [credentialsEmailInput, setCredentialsEmailInput] = useState("")
-  const [credentialsPasswordInput, setCredentialsPasswordInput] = useState("")
-  const [resetTokenInput, setResetTokenInput] = useState("")
-  const [resetNewPasswordInput, setResetNewPasswordInput] = useState("")
   const [workspaceNameInput, setWorkspaceNameInput] = useState("")
   const [joinSlugInput, setJoinSlugInput] = useState("")
   const [joinCodeInput, setJoinCodeInput] = useState("")
@@ -152,112 +103,6 @@ export default function SyncModal() {
     },
     [addToast],
   )
-
-  const handleRegisterPasskey = useCallback(async () => {
-    try {
-      const fallbackName = sync.account?.displayName || "Vigilare User"
-      await sync.registerWithPasskey(accountNameInput.trim() || fallbackName)
-      setAccountNameInput("")
-    } catch (error) {
-      addToast({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to create passkey account",
-        icon: RotateCcw,
-      })
-    }
-  }, [accountNameInput, addToast, sync])
-
-  const handlePasskeyLogin = useCallback(async () => {
-    try {
-      await sync.loginWithPasskey()
-    } catch (error) {
-      addToast({
-        message: error instanceof Error ? error.message : "Failed to sign in",
-        icon: RotateCcw,
-      })
-    }
-  }, [addToast, sync])
-
-  const handleCredentialsRegister = useCallback(async () => {
-    try {
-      const displayName =
-        accountNameInput.trim() || sync.account?.displayName || "Vigilare User"
-      await sync.registerWithCredentials(
-        credentialsEmailInput.trim(),
-        credentialsPasswordInput,
-        displayName,
-      )
-      setCredentialsPasswordInput("")
-    } catch (error) {
-      addToast({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to register credentials",
-        icon: RotateCcw,
-      })
-    }
-  }, [
-    accountNameInput,
-    addToast,
-    credentialsEmailInput,
-    credentialsPasswordInput,
-    sync,
-  ])
-
-  const handleCredentialsLogin = useCallback(async () => {
-    try {
-      await sync.loginWithCredentials(
-        credentialsEmailInput.trim(),
-        credentialsPasswordInput,
-      )
-      setCredentialsPasswordInput("")
-    } catch (error) {
-      addToast({
-        message:
-          error instanceof Error ? error.message : "Failed to sign in",
-        icon: RotateCcw,
-      })
-    }
-  }, [addToast, credentialsEmailInput, credentialsPasswordInput, sync])
-
-  const handleRequestReset = useCallback(async () => {
-    try {
-      await sync.requestPasswordReset(credentialsEmailInput.trim())
-    } catch (error) {
-      addToast({
-        message:
-          error instanceof Error ? error.message : "Failed to request reset",
-        icon: RotateCcw,
-      })
-    }
-  }, [addToast, credentialsEmailInput, sync])
-
-  const handleConfirmReset = useCallback(async () => {
-    try {
-      await sync.confirmPasswordReset(
-        credentialsEmailInput.trim(),
-        resetTokenInput.trim(),
-        resetNewPasswordInput,
-      )
-      setResetTokenInput("")
-      setResetNewPasswordInput("")
-    } catch (error) {
-      addToast({
-        message:
-          error instanceof Error ? error.message : "Failed to reset password",
-        icon: RotateCcw,
-      })
-    }
-  }, [
-    addToast,
-    credentialsEmailInput,
-    resetNewPasswordInput,
-    resetTokenInput,
-    sync,
-  ])
 
   const handleCreateWorkspace = useCallback(async () => {
     try {
@@ -416,91 +261,7 @@ export default function SyncModal() {
                   <Shield size={14} />
                   Identity
                 </div>
-                {!sync.isAuthenticated && (
-                  <>
-                    <Input
-                      type="text"
-                      value={accountNameInput}
-                      onChange={(event) =>
-                        setAccountNameInput(event.target.value)
-                      }
-                      placeholder="Display name"
-                    />
-                    <Input
-                      type="email"
-                      value={credentialsEmailInput}
-                      onChange={(event) =>
-                        setCredentialsEmailInput(event.target.value)
-                      }
-                      placeholder="Email"
-                    />
-                    <Input
-                      type="password"
-                      value={credentialsPasswordInput}
-                      onChange={(event) =>
-                        setCredentialsPasswordInput(event.target.value)
-                      }
-                      placeholder="Password"
-                    />
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      onClick={() => void handleCredentialsRegister()}
-                    >
-                      Register with Credentials
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      onClick={() => void handleCredentialsLogin()}
-                    >
-                      Sign in with Credentials
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      onClick={() => void handlePasskeyLogin()}
-                    >
-                      Sign in with Passkey
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      onClick={() => void handleRegisterPasskey()}
-                    >
-                      Register with Passkey
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="ghost"
-                      onClick={() => void handleRequestReset()}
-                    >
-                      Request Password Reset
-                    </Button>
-                    <Input
-                      type="text"
-                      value={resetTokenInput}
-                      onChange={(event) => setResetTokenInput(event.target.value)}
-                      placeholder="Reset token"
-                    />
-                    <Input
-                      type="password"
-                      value={resetNewPasswordInput}
-                      onChange={(event) =>
-                        setResetNewPasswordInput(event.target.value)
-                      }
-                      placeholder="New password"
-                    />
-                    <Button
-                      className="w-full"
-                      variant="ghost"
-                      onClick={() => void handleConfirmReset()}
-                    >
-                      Confirm Password Reset
-                    </Button>
-                  </>
-                )}
-                {sync.isAuthenticated && (
+                {sync.isAuthenticated ? (
                   <>
                     <div className="rounded-lg border border-[rgb(var(--border))] px-3 py-2 text-xs text-[rgb(var(--muted))]">
                       <div>
@@ -510,39 +271,20 @@ export default function SyncModal() {
                         </span>
                       </div>
                       <div className="mt-1">
-                        User ID:{" "}
-                        <span className="font-mono text-[rgb(var(--foreground))]">
-                          {sync.account?.userId}
+                        Active auth methods:{" "}
+                        <span className="font-medium text-[rgb(var(--foreground))]">
+                          {(sync.account?.authMethods ?? []).join(", ") ||
+                            "none"}
                         </span>
                       </div>
-                      {sync.account?.email && (
-                        <div className="mt-1">
-                          Email:{" "}
-                          <span className="font-medium text-[rgb(var(--foreground))]">
-                            {sync.account.email}
-                          </span>
-                        </div>
-                      )}
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {(sync.account?.authMethods ?? []).map((method) => (
-                          <span
-                            key={method}
-                            className="rounded border border-[rgb(var(--border))] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[rgb(var(--foreground))]"
-                          >
-                            {method}
-                          </span>
-                        ))}
-                      </div>
                     </div>
-                    {!(sync.account?.authMethods ?? []).includes("passkey") && (
-                      <Button
-                        className="w-full"
-                        variant="secondary"
-                        onClick={() => void handleRegisterPasskey()}
-                      >
-                        Add Passkey
-                      </Button>
-                    )}
+                    <Button
+                      className="w-full"
+                      variant="secondary"
+                      onClick={() => openModal("auth")}
+                    >
+                      Open Auth
+                    </Button>
                     <Button
                       className="w-full"
                       variant="danger"
@@ -550,6 +292,26 @@ export default function SyncModal() {
                     >
                       Sign Out
                     </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="rounded-lg border border-[rgb(var(--border))] px-3 py-2 text-xs text-[rgb(var(--muted))]">
+                      You are signed out.
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <Button
+                        variant="secondary"
+                        onClick={() => openModal("authRegister")}
+                      >
+                        Register
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => openModal("authLogin")}
+                      >
+                        Sign In
+                      </Button>
+                    </div>
                   </>
                 )}
               </div>

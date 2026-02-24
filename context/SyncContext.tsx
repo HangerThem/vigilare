@@ -151,6 +151,10 @@ function normalizeInstances(
   return Array.from(deduped.values())
 }
 
+function hasMessage(error: unknown, value: string): boolean {
+  return error instanceof Error && error.message === value
+}
+
 function toConnection(workspace: WorkspaceSummary, revision = 0): WorkspaceConnection {
   const now = new Date().toISOString()
   return {
@@ -550,8 +554,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         password,
       })
 
-      if (signInResult?.error) {
-        throw new Error(signInResult.error)
+      if (!signInResult?.ok || signInResult.error) {
+        throw new Error(signInResult?.error ?? "Failed to sign in with credentials")
       }
 
       await hydrateAccount()
@@ -581,8 +585,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         password,
       })
 
-      if (signInResult?.error) {
-        throw new Error(signInResult.error)
+      if (!signInResult?.ok || signInResult.error) {
+        throw new Error(signInResult?.error ?? "Failed to sign in with credentials")
       }
 
       await hydrateAccount()
@@ -913,6 +917,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (connection.role === "viewer") {
+        void refreshWorkspaces().catch(() => {
+          // Ignore membership refresh failures here and keep local UX responsive.
+        })
         addToast({
           message: "Workspace is read-only",
           icon: icons.Lock,
@@ -1066,6 +1073,37 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             [activeWorkspaceId]: previousCollections,
           }))
 
+          if (hasMessage(error, "Read-only membership")) {
+            const currentConnection = connectionsRef.current[activeWorkspaceId]
+            if (currentConnection && currentConnection.role !== "viewer") {
+              persistConnections({
+                ...connectionsRef.current,
+                [activeWorkspaceId]: {
+                  ...currentConnection,
+                  role: "viewer",
+                  updatedAt: new Date().toISOString(),
+                },
+              })
+            }
+
+            void refreshWorkspaces().catch(() => {
+              // Best-effort role reconciliation; do not interrupt the current flow.
+            })
+
+            addToast({
+              message: "Workspace role changed to read-only",
+              icon: icons.Lock,
+            })
+
+            setStatus({
+              state: "synced",
+              pendingLocalChanges: 0,
+              lastSyncedAt: new Date().toISOString(),
+              errorMessage: null,
+            })
+            return
+          }
+
           setStatus({
             state: "error",
             pendingLocalChanges: 0,
@@ -1075,8 +1113,47 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       return true
     },
-    [activeWorkspaceId, addToast, connection, persistConnections, setStatus, syncEnabled],
+    [
+      activeWorkspaceId,
+      addToast,
+      connection,
+      persistConnections,
+      refreshWorkspaces,
+      setStatus,
+      syncEnabled,
+    ],
   )
+
+  useEffect(() => {
+    if (!syncEnabled || !account) {
+      return
+    }
+
+    let cancelled = false
+
+    const refreshMemberships = async () => {
+      if (cancelled || !isOnline()) {
+        return
+      }
+
+      try {
+        await refreshWorkspaces()
+      } catch {
+        if (cancelled) return
+      }
+    }
+
+    void refreshMemberships()
+
+    const timer = window.setInterval(() => {
+      void refreshMemberships()
+    }, SYNC_POLL_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [account, refreshWorkspaces, syncEnabled])
 
   useEffect(() => {
     if (syncEnabled && activeWorkspaceId && account) {
@@ -1146,6 +1223,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         .then((response) => {
           if (cancelled) return
           if (response.unchanged) {
+            setStatus({
+              state: "synced",
+              lastSyncedAt: new Date().toISOString(),
+              errorMessage: null,
+            })
             return
           }
 
@@ -1176,6 +1258,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         })
         .catch((error: unknown) => {
           if (cancelled) return
+          if (hasMessage(error, "Workspace access denied")) {
+            void refreshWorkspaces().catch(() => {
+              // Keep polling loop alive even if membership refresh fails.
+            })
+          }
           setStatus({
             state: isOnline() ? "error" : "offline",
             errorMessage: error instanceof Error ? error.message : "Failed to refresh workspace",
@@ -1201,7 +1288,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("online", onOnline)
       window.removeEventListener("offline", onOffline)
     }
-  }, [account, activeWorkspaceId, ensureWorkspaceSnapshot, persistConnections, setStatus, syncEnabled])
+  }, [
+    account,
+    activeWorkspaceId,
+    ensureWorkspaceSnapshot,
+    persistConnections,
+    refreshWorkspaces,
+    setStatus,
+    syncEnabled,
+  ])
 
   const contextValue = useMemo<SyncContextType>(
     () => ({

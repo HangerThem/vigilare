@@ -3,17 +3,23 @@
 import { useTheme } from "@/context/ThemeContext"
 import { useModal } from "@/context/ModalContext"
 import { useSettings } from "@/context/SettingsContext"
+import { useSync } from "@/context/SyncContext"
 import { Button } from "@/components/ui/Button"
+import { cn } from "@/utils/cn"
+import { SYNC_STATUS_META } from "@/utils/sync/statusMeta"
 import { Menu, Search, Settings, SquareChevronRight } from "lucide-react"
 import Tooltip from "../ui/Tooltip"
+import { Select } from "../ui/Select"
 
 export function Header() {
   const { theme, toggleTheme, getIcon, getTitle } = useTheme()
   const { openModal } = useModal()
   const { settings } = useSettings()
+  const sync = useSync()
 
   const iconSize = settings.compactMode ? 16 : 20
   const mobileIconSize = settings.compactMode ? 14 : 18
+  const syncStatusMeta = SYNC_STATUS_META[sync.syncStatus.state]
 
   return (
     <header className="w-full flex-shrink-0">
@@ -27,6 +33,33 @@ export function Header() {
         </h1>
 
         <div className="hidden sm:flex items-center gap-2">
+          {sync.syncEnabled && (
+            <>
+              <Tooltip content="Sync Hub" delay={500}>
+                <button
+                  onClick={() => openModal("syncHub")}
+                  className={cn(
+                    "gap-1 px-4 py-2 text-xs rounded-lg border flex items-center cursor-pointer",
+                    syncStatusMeta.className,
+                  )}
+                >
+                  <syncStatusMeta.icon size={12} />
+                  <span className="hidden md:inline">
+                    {syncStatusMeta.label}
+                  </span>
+                </button>
+              </Tooltip>
+              <Select
+                options={sync.instances.map((instance) => ({
+                  value: instance.instanceId,
+                  label: instance.label,
+                }))}
+                className="w-32"
+                value={sync.activeInstanceId}
+                onChange={(value) => sync.switchInstance(value as string)}
+              />
+            </>
+          )}
           <Tooltip content="Search" delay={500}>
             <Button
               onClick={() => openModal("globalSearch")}
@@ -56,6 +89,30 @@ export function Header() {
         </div>
 
         <div className="flex sm:hidden items-center gap-2">
+          {sync.syncEnabled && (
+            <>
+              <Button
+                onClick={() => openModal("syncHub")}
+                title={`Sync: ${syncStatusMeta.label}`}
+                variant="secondary"
+                className={cn("px-2", syncStatusMeta.className)}
+              >
+                <syncStatusMeta.icon size={mobileIconSize} />
+              </Button>
+              <select
+                className="h-8 max-w-28 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-2 text-xs text-[rgb(var(--foreground))]"
+                value={sync.activeInstanceId}
+                onChange={(event) => sync.switchInstance(event.target.value)}
+                aria-label="Switch workspace"
+              >
+                {sync.instances.map((instance) => (
+                  <option key={instance.instanceId} value={instance.instanceId}>
+                    {instance.label}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <Button
             onClick={() => openModal("globalSearch")}
             title="Search"

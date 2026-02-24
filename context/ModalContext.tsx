@@ -12,6 +12,9 @@ export type ModalName =
   | "shortcuts"
   | "settings"
   | "syncHub"
+  | "auth"
+  | "authRegister"
+  | "authLogin"
   | "confirm"
 
 type ModalAddContextType = {

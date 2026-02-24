@@ -26,7 +26,6 @@ export interface WorkspaceMemberSummary {
   role: WorkspaceRole
   canInvite: boolean
   joinedAt: string
-  lastSeenAt: string | null
 }
 
 export interface InviteSummary {
@@ -561,7 +560,6 @@ export async function listWorkspaceMembers(
     role: member.role,
     canInvite: member.canInvite,
     joinedAt: member.joinedAt.toISOString(),
-    lastSeenAt: null,
   }))
 }
 

@@ -23,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
   experimental: {
     enableWebAuthn: true,
@@ -73,11 +73,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async session({ session, user, token }) {
+      const sessionUserId = user?.id ?? (typeof token?.sub === "string" ? token.sub : null)
       if (session.user) {
-        session.user.id = user.id
-        session.user.name = session.user.name ?? user.name ?? null
-        session.user.email = session.user.email ?? user.email ?? null
+        session.user.id = sessionUserId ?? session.user.id
+        session.user.name =
+          session.user.name ??
+          (typeof token?.name === "string" ? token.name : null) ??
+          user?.name ??
+          null
+        session.user.email =
+          session.user.email ??
+          (typeof token?.email === "string" ? token.email : null) ??
+          user?.email ??
+          null
       }
 
       return session
